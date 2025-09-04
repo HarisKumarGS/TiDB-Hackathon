@@ -7,11 +7,9 @@ from tidb_vector.integrations import TiDBVectorClient
 
 class CodeIndexer:
     def __init__(self):
-        self.voyager = voyageai.Client(
-            api_key="pa-N6xn-h8WqbXaiUhsKdVKvobquVvEWybksvAacOMB97r"
-        )
+        self.voyager = voyageai.Client(api_key=os.getenv("VOYAGE_API_KEY"))
         self.vector_client = TiDBVectorClient(
-            connection_string="mysql+pymysql://2AyjJP1eRHUCep3.root:8sqZarmr82XZqolB@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/test?ssl_ca=/etc/ssl/cert.pem&ssl_verify_cert=true&ssl_verify_identity=true",
+            connection_string=os.getenv("TIDB_CONNECTION_STRING"),
             vector_dimension=1024,
             table_name="sample_ecommerce_app_code",
             drop_existing_table=False,
