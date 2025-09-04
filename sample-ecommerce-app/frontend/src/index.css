@@ -1,0 +1,203 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Premium Ecommerce Design System - All colors MUST be HSL */
+
+@layer base {
+  :root {
+    /* Core Brand Colors */
+    --background: 0 0% 100%;
+    --foreground: 215 25% 15%;
+
+    /* Brand Identity */
+    --primary: 212 85% 42%;           /* Deep ocean blue */
+    --primary-light: 212 85% 55%;     /* Lighter brand blue */
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 25 85% 58%;          /* Warm coral accent */
+    --secondary-light: 25 85% 68%;
+    --secondary-foreground: 0 0% 98%;
+
+    /* Premium Neutrals */
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+    --muted-dark: 220 14% 89%;
+
+    /* Surface Colors */
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+    --card-hover: 220 14% 98%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    /* Interactive Elements */
+    --accent: 152 65% 52%;            /* Success green */
+    --accent-foreground: 0 0% 98%;
+    
+    --destructive: 0 84% 60%;         /* Error red */
+    --destructive-foreground: 0 0% 98%;
+
+    --warning: 45 93% 58%;            /* Warning amber */
+    --warning-foreground: 0 0% 98%;
+
+    /* Form Elements */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --input-hover: 220 13% 85%;
+    --ring: 212 85% 42%;
+
+    /* Premium Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(212 85% 42%), hsl(212 85% 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(25 85% 58%), hsl(25 85% 68%));
+    --gradient-hero: linear-gradient(135deg, hsl(212 85% 42%), hsl(180 65% 35%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 14% 98%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 14% 98%));
+
+    /* Sophisticated Shadows */
+    --shadow-sm: 0 2px 4px -1px hsl(212 85% 42% / 0.1);
+    --shadow-md: 0 4px 12px -2px hsl(212 85% 42% / 0.15);
+    --shadow-lg: 0 8px 32px -4px hsl(212 85% 42% / 0.2);
+    --shadow-xl: 0 20px 50px -12px hsl(212 85% 42% / 0.25);
+    --shadow-glow: 0 0 20px hsl(212 85% 55% / 0.4);
+
+    /* Smooth Animations */
+    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 215 25% 8%;
+    --foreground: 0 0% 95%;
+
+    --primary: 212 85% 55%;
+    --primary-light: 212 85% 65%;
+    --primary-foreground: 215 25% 8%;
+    
+    --secondary: 25 85% 65%;
+    --secondary-light: 25 85% 75%;
+    --secondary-foreground: 215 25% 8%;
+
+    --muted: 215 25% 12%;
+    --muted-foreground: 215 16% 65%;
+    --muted-dark: 215 25% 10%;
+
+    --card: 215 25% 10%;
+    --card-foreground: 0 0% 95%;
+    --card-hover: 215 25% 12%;
+
+    --popover: 215 25% 10%;
+    --popover-foreground: 0 0% 95%;
+
+    --accent: 152 65% 58%;
+    --accent-foreground: 215 25% 8%;
+    
+    --destructive: 0 84% 65%;
+    --destructive-foreground: 0 0% 98%;
+
+    --warning: 45 93% 65%;
+    --warning-foreground: 215 25% 8%;
+
+    --border: 215 25% 18%;
+    --input: 215 25% 18%;
+    --input-hover: 215 25% 22%;
+    --ring: 212 85% 55%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(212 85% 55%), hsl(212 85% 65%));
+    --gradient-secondary: linear-gradient(135deg, hsl(25 85% 65%), hsl(25 85% 75%));
+    --gradient-hero: linear-gradient(135deg, hsl(212 85% 55%), hsl(180 65% 45%));
+    --gradient-card: linear-gradient(145deg, hsl(215 25% 10%), hsl(215 25% 12%));
+    --gradient-subtle: linear-gradient(180deg, hsl(215 25% 10%), hsl(215 25% 12%));
+
+    --shadow-sm: 0 2px 4px -1px hsl(215 25% 0% / 0.3);
+    --shadow-md: 0 4px 12px -2px hsl(215 25% 0% / 0.4);
+    --shadow-lg: 0 8px 32px -4px hsl(215 25% 0% / 0.5);
+    --shadow-xl: 0 20px 50px -12px hsl(215 25% 0% / 0.6);
+    --shadow-glow: 0 0 20px hsl(212 85% 55% / 0.3);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Premium Typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  /* Smooth Scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Hero Section Styles */
+  .hero-gradient {
+    background: var(--gradient-hero);
+  }
+
+  .card-gradient {
+    background: var(--gradient-card);
+  }
+
+  /* Premium Button Animations */
+  .btn-hover-lift {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+
+  /* Product Card Hover Effects */
+  .product-card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-2;
+  }
+
+  /* Smooth Focus Styles */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+
+  /* Glass Effect */
+  .glass {
+    backdrop-filter: blur(10px);
+    background: hsl(var(--background) / 0.8);
+  }
+
+  /* Custom Scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
