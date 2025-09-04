@@ -1,0 +1,16 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "google-adk>=1.13.0",
+    "pymysql>=1.1.2",
+    "ruff>=0.12.11",
+    "tidb-vector>=0.0.15",
+    "tree-sitter>=0.23.2",
+    "tree-sitter-javascript>=0.23.1",
+    "tree-sitter-python>=0.23.6",
+    "voyageai>=0.3.4",
+]
