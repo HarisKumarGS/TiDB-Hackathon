@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* CrashLens AI Theme - Dark Futuristic */
+    --background: 240 6% 8%;
+    --foreground: 240 5% 96%;
+
+    --card: 240 4% 12%;
+    --card-foreground: 240 5% 96%;
+
+    --popover: 240 4% 12%;
+    --popover-foreground: 240 5% 96%;
+
+    /* Electric Purple Primary */
+    --primary: 270 95% 75%;
+    --primary-foreground: 240 6% 8%;
+
+    /* Subtle Purple Secondary */
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 240 5% 96%;
+
+    --muted: 240 4% 14%;
+    --muted-foreground: 240 5% 65%;
+
+    /* Neon Accent */
+    --accent: 195 100% 75%;
+    --accent-foreground: 240 6% 8%;
+
+    /* Danger Red */
+    --destructive: 0 85% 65%;
+    --destructive-foreground: 240 6% 8%;
+
+    /* Success Green */
+    --success: 150 85% 65%;
+    --success-foreground: 240 6% 8%;
+
+    /* Warning Orange */
+    --warning: 35 85% 65%;
+    --warning-foreground: 240 6% 8%;
+
+    --border: 240 4% 18%;
+    --input: 240 4% 16%;
+    --ring: 270 95% 75%;
+
+    --radius: 0.75rem;
+
+    /* Glass Effect */
+    --glass-bg: 240 4% 12% / 0.8;
+    --glass-border: 240 5% 25% / 0.3;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(270 95% 75%), hsl(300 85% 70%));
+    --gradient-secondary: linear-gradient(135deg, hsl(195 100% 75%), hsl(220 85% 70%));
+    --gradient-danger: linear-gradient(135deg, hsl(0 85% 65%), hsl(15 85% 60%));
+    --gradient-success: linear-gradient(135deg, hsl(150 85% 65%), hsl(165 85% 60%));
+    --gradient-bg: linear-gradient(135deg, hsl(240 6% 8%), hsl(250 8% 12%));
+
+    /* Shadows & Glows */
+    --shadow-glow: 0 0 20px hsl(270 95% 75% / 0.3);
+    --shadow-card: 0 8px 32px hsl(240 6% 4% / 0.5);
+    --shadow-lg: 0 20px 40px hsl(240 6% 4% / 0.7);
+
+    /* Sidebar */
+    --sidebar-background: 240 5% 10%;
+    --sidebar-foreground: 240 5% 90%;
+    --sidebar-primary: 270 95% 75%;
+    --sidebar-primary-foreground: 240 6% 8%;
+    --sidebar-accent: 240 4% 16%;
+    --sidebar-accent-foreground: 240 5% 96%;
+    --sidebar-border: 240 4% 18%;
+    --sidebar-ring: 270 95% 75%;
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background: var(--gradient-bg);
+    min-height: 100vh;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/20;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/50;
+  }
+}
+
+@layer components {
+  /* Glass Effect */
+  .glass {
+    background: hsl(var(--glass-bg));
+    border: 1px solid hsl(var(--glass-border));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* Glow Effects */
+  .glow-primary {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .glow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Animated Gradient Text */
+  .gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Hover Animations */
+  .hover-lift {
+    transition: var(--transition-smooth);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* AI Circuit Pattern */
+  .circuit-pattern {
+    background-image: 
+      radial-gradient(circle at 25% 25%, hsl(270 95% 75% / 0.1) 2px, transparent 2px),
+      radial-gradient(circle at 75% 75%, hsl(195 100% 75% / 0.1) 2px, transparent 2px);
+    background-size: 50px 50px;
+  }
+}

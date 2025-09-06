@@ -36,6 +36,14 @@ export default {
 					DEFAULT: 'hsl(var(--destructive))',
 					foreground: 'hsl(var(--destructive-foreground))'
 				},
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
+				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
 					foreground: 'hsl(var(--muted-foreground))'
@@ -61,27 +69,25 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				},
-				/* Observability status colors */
-				status: {
-					healthy: 'hsl(var(--status-healthy))',
-					warning: 'hsl(var(--status-warning))',
-					critical: 'hsl(var(--status-critical))',
-					unknown: 'hsl(var(--status-unknown))'
-				},
-				/* Component colors */
-				frontend: 'hsl(var(--frontend-primary))',
-				backend: 'hsl(var(--backend-primary))',
-				database: 'hsl(var(--database-primary))',
-				billing: 'hsl(var(--billing-primary))',
-				/* Chart colors */
-				chart: {
-					'1': 'hsl(var(--chart-1))',
-					'2': 'hsl(var(--chart-2))',
-					'3': 'hsl(var(--chart-3))',
-					'4': 'hsl(var(--chart-4))',
-					'5': 'hsl(var(--chart-5))'
 				}
+			},
+			backgroundImage: {
+				'gradient-primary': 'var(--gradient-primary)',
+				'gradient-secondary': 'var(--gradient-secondary)',
+				'gradient-danger': 'var(--gradient-danger)',
+				'gradient-success': 'var(--gradient-success)',
+				'gradient-bg': 'var(--gradient-bg)',
+			},
+			boxShadow: {
+				'glow': 'var(--shadow-glow)',
+				'card': 'var(--shadow-card)',
+				'lg': 'var(--shadow-lg)',
+			},
+			animation: {
+				'fade-in': 'fadeIn 0.5s ease-out',
+				'slide-up': 'slideUp 0.3s ease-out',
+				'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				'glow': 'glow 2s ease-in-out infinite alternate',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -104,11 +110,19 @@ export default {
 					to: {
 						height: '0'
 					}
-				}
-			},
-			animation: {
-				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				},
+				fadeIn: {
+					'0%': { opacity: '0', transform: 'translateY(10px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' },
+				},
+				slideUp: {
+					'0%': { transform: 'translateY(100%)' },
+					'100%': { transform: 'translateY(0)' },
+				},
+				glow: {
+					'0%': { filter: 'brightness(1) drop-shadow(0 0 5px hsl(270 95% 75% / 0.3))' },
+					'100%': { filter: 'brightness(1.2) drop-shadow(0 0 20px hsl(270 95% 75% / 0.6))' },
+				},
 			}
 		}
 	},
