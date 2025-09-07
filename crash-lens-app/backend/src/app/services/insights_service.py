@@ -171,7 +171,20 @@ class InsightsService:
         """)
         result = await self.db.execute(query, {"repository_id": repository_id})
         
-        return [
-            ComponentCount(component=row.component, count=row.count)
-            for row in result.fetchall()
-        ]
+        # Get all component data
+        component_data = [{"component": row.component, "count": row.count} for row in result.fetchall()]
+        
+        # Calculate total crashes for percentage calculation
+        total_crashes = sum(item["count"] for item in component_data)
+        
+        # Calculate percentages and create ComponentCount objects
+        component_counts = []
+        for item in component_data:
+            percentage = (item["count"] / total_crashes * 100) if total_crashes > 0 else 0.0
+            component_counts.append(ComponentCount(
+                component=item["component"],
+                count=item["count"],
+                percentage=round(percentage, 2)
+            ))
+        
+        return component_counts

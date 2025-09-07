@@ -22,6 +22,7 @@ class ComponentCount(BaseModel):
     """Component crash count"""
     component: str
     count: int
+    percentage: float
 
 
 class InsightsResponse(BaseModel):

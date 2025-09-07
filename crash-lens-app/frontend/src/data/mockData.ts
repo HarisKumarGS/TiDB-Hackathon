@@ -2,9 +2,12 @@ export interface Repository {
   id: string;
   name: string;
   url: string;
-  owner: string;
-  crashCount: number;
-  lastCrash: string;
+  created_at?: string;
+  updated_at?: string;
+  // Additional frontend-specific fields
+  owner?: string;
+  crashCount?: number;
+  lastCrash?: string;
 }
 
 export interface Crash {
@@ -206,10 +209,10 @@ export const mockChartData = {
     { name: 'Low', value: 22, color: '#22c55e' }
   ],
   topComponents: [
-    { component: 'UserAuth', crashes: 12 },
-    { component: 'PaymentProcessor', crashes: 8 },
-    { component: 'DataSync', crashes: 6 },
-    { component: 'ImageUpload', crashes: 4 },
-    { component: 'LocationService', crashes: 3 }
+    { component: 'UserAuth', crashes: 12, percentage: 36.36 },
+    { component: 'PaymentProcessor', crashes: 8, percentage: 24.24 },
+    { component: 'DataSync', crashes: 6, percentage: 18.18 },
+    { component: 'ImageUpload', crashes: 4, percentage: 12.12 },
+    { component: 'LocationService', crashes: 3, percentage: 9.09 }
   ]
 };

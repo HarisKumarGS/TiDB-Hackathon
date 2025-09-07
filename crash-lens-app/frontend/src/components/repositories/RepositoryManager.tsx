@@ -16,10 +16,11 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Repository } from '@/data/mockData';
+import { apiService } from '@/services/apiService';
 
 interface RepositoryManagerProps {
   repositories: Repository[];
-  onRepositoryAdd: (repository: Omit<Repository, 'id'>) => void;
+  onRepositoryAdd: (repository: Repository) => void;
   onRepositoryRemove: (id: string) => void;
 }
 
@@ -65,14 +66,16 @@ export function RepositoryManager({
         return;
       }
 
-      const newRepo = {
+      // Create repository data for API
+      const repositoryData = {
         name,
-        url: repoUrl,
-        owner,
-        crashCount: 0,
-        lastCrash: new Date().toISOString()
+        url: repoUrl
       };
 
+      // Call API to add repository
+      const newRepo = await apiService.addRepository(repositoryData);
+      
+      // Update parent component with the new repository
       onRepositoryAdd(newRepo);
       
       toast({
@@ -83,9 +86,10 @@ export function RepositoryManager({
       setRepoUrl('');
       setIsOpen(false);
     } catch (error) {
+      console.error('Failed to add repository:', error);
       toast({
         title: "Failed to add repository",
-        description: error instanceof Error ? error.message : "Invalid repository URL",
+        description: error instanceof Error ? error.message : "Failed to add repository. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -93,12 +97,22 @@ export function RepositoryManager({
     }
   };
 
-  const handleRemoveRepository = (id: string, name: string) => {
-    onRepositoryRemove(id);
-    toast({
-      title: "Repository removed",
-      description: `${name} has been removed from monitoring.`,
-    });
+  const handleRemoveRepository = async (id: string, name: string) => {
+    try {
+      await apiService.removeRepository(id);
+      onRepositoryRemove(id);
+      toast({
+        title: "Repository removed",
+        description: `${name} has been removed from monitoring.`,
+      });
+    } catch (error) {
+      console.error('Failed to remove repository:', error);
+      toast({
+        title: "Failed to remove repository",
+        description: "Failed to remove repository. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

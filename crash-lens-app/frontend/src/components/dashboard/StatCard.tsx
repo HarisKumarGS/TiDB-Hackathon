@@ -35,24 +35,6 @@ export function StatCard({ title, value, change, icon: Icon, className }: StatCa
           >
             {value}
           </motion.p>
-          {change && (
-            <motion.div 
-              className="flex items-center mt-2"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <span className={cn(
-                "text-xs font-medium",
-                change.type === 'increase' 
-                  ? "text-destructive" 
-                  : "text-success"
-              )}>
-                {change.type === 'increase' ? '+' : ''}{change.value}
-              </span>
-              <span className="text-xs text-muted-foreground ml-1">vs last week</span>
-            </motion.div>
-          )}
         </div>
         
         <motion.div 

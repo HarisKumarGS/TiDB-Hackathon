@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   AlertTriangle, 
@@ -23,18 +23,78 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { mockCrashes, mockRepositories, mockChartData, Repository } from '@/data/mockData';
+import { Repository, Crash } from '@/data/mockData';
+import { apiService } from '@/services/apiService';
 
 export default function Dashboard() {
-  const [repositories, setRepositories] = useState<Repository[]>(mockRepositories);
-  const [selectedRepo, setSelectedRepo] = useState(repositories[0]?.id || '');
+  const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [selectedRepo, setSelectedRepo] = useState('');
+  const [isLoadingRepos, setIsLoadingRepos] = useState(true);
+  const [repoError, setRepoError] = useState<string | null>(null);
+  const [crashes, setCrashes] = useState<Crash[]>([]);
+  const [isLoadingCrashes, setIsLoadingCrashes] = useState(false);
+  const [crashError, setCrashError] = useState<string | null>(null);
 
-  const handleAddRepository = (newRepo: Omit<Repository, 'id'>) => {
-    const repository: Repository = {
-      ...newRepo,
-      id: `repo-${Date.now()}`,
+  // Placeholder chart data - replace with API data when available
+  const chartData = {
+    crashRateByDay: [],
+    weeklyTrend: [],
+    severityDistribution: [],
+    topComponents: []
+  };
+
+  // Fetch crashes for selected repository
+  const fetchCrashes = async (repositoryId?: string) => {
+    try {
+      setIsLoadingCrashes(true);
+      setCrashError(null);
+      const crashData = await apiService.getCrashes(repositoryId);
+      // Ensure crashData is an array
+      const crashesArray = Array.isArray(crashData) ? crashData : [];
+      setCrashes(crashesArray);
+    } catch (error) {
+      console.error('Failed to fetch crashes:', error);
+      setCrashError('Failed to load crashes. Please try again later.');
+      setCrashes([]);
+    } finally {
+      setIsLoadingCrashes(false);
+    }
+  };
+
+  // Fetch repositories on component initialization
+  useEffect(() => {
+    const fetchRepositories = async () => {
+      try {
+        setIsLoadingRepos(true);
+        setRepoError(null);
+        const repos = await apiService.getRepositories();
+        setRepositories(repos);
+        if (repos.length > 0) {
+          setSelectedRepo(repos[0].id);
+        }
+      } catch (error) {
+        console.error('Failed to fetch repositories:', error);
+        setRepoError('Failed to load repositories. Please try again later.');
+        setRepositories([]);
+      } finally {
+        setIsLoadingRepos(false);
+      }
     };
-    setRepositories(prev => [...prev, repository]);
+
+    fetchRepositories();
+  }, []);
+
+  // Fetch crashes when selected repository changes
+  useEffect(() => {
+    if (selectedRepo) {
+      fetchCrashes(selectedRepo);
+    } else {
+      fetchCrashes(); // Fetch all crashes if no repository selected
+    }
+  }, [selectedRepo]);
+
+  const handleAddRepository = (newRepo: Repository) => {
+    setRepositories(prev => [...prev, newRepo]);
   };
 
   const handleRemoveRepository = (id: string) => {
@@ -45,9 +105,7 @@ export default function Dashboard() {
     }
   };
 
-  const filteredCrashes = mockCrashes.filter(crash => 
-    selectedRepo ? crash.repositoryId === selectedRepo : true
-  );
+  const filteredCrashes = Array.isArray(crashes) ? crashes : [];
   return (
     <div className="flex-1 overflow-auto">
       <div className="p-4 sm:p-6 space-y-6">
@@ -59,25 +117,33 @@ export default function Dashboard() {
         >
           <div>
             <h1 className="text-3xl font-bold gradient-text">Dashboard</h1>
-            <p className="text-muted-foreground mt-1">
-              AI-powered crash analysis and monitoring
-            </p>
           </div>
           
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-            <Select value={selectedRepo} onValueChange={setSelectedRepo}>
-              <SelectTrigger className="w-full sm:w-48 bg-secondary/50 border-border/30">
-                <GitBranch className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Select repository" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border border-border z-50">
-                {repositories.map((repo) => (
-                  <SelectItem key={repo.id} value={repo.id}>
-                    {repo.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <Select 
+                value={selectedRepo} 
+                onValueChange={setSelectedRepo}
+                disabled={isLoadingRepos}
+              >
+                <SelectTrigger className="w-full sm:w-48 bg-secondary/50 border-border/30">
+                  <GitBranch className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder={isLoadingRepos ? "Loading repositories..." : "Select repository"} />
+                </SelectTrigger>
+                <SelectContent className="bg-card border border-border z-50">
+                  {repositories.map((repo) => (
+                    <SelectItem key={repo.id} value={repo.id}>
+                      {repo.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {repoError && (
+                <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                  {repoError}
+                </p>
+              )}
+            </div>
             
             <RepositoryManager
               repositories={repositories}
@@ -115,24 +181,28 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <CrashRateChart data={mockChartData.crashRateByDay} />
-          <WeeklyTrendChart data={mockChartData.weeklyTrend} />
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ModernSeverityChart 
-            data={mockChartData.severityDistribution}
+            data={chartData.severityDistribution}
           />
           
           <ModernImpactedComponents 
-            data={mockChartData.topComponents}
+            data={chartData.topComponents}
           />
         </div>
 
         {/* Recent Crashes Table */}
-        <CrashTable crashes={filteredCrashes.slice(0, 5)} />
+        {isLoadingCrashes ? (
+          <div className="flex items-center justify-center p-8">
+            <div className="text-muted-foreground">Loading crashes...</div>
+          </div>
+        ) : crashError ? (
+          <div className="flex items-center justify-center p-8">
+            <div className="text-red-500">{crashError}</div>
+          </div>
+        ) : (
+          <CrashTable crashes={filteredCrashes.slice(0, 5)} />
+        )}
       </div>
     </div>
   );

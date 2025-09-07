@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 interface ComponentData {
   component: string;
   crashes: number;
+  percentage?: number; // Optional for backward compatibility
 }
 
 interface ModernComponentsProps {
@@ -25,7 +26,7 @@ export function ModernImpactedComponents({ data, className }: ModernComponentsPr
   if (!data || data.length === 0) {
     return (
       <motion.div
-        className={cn("glass p-3 sm:p-4 rounded-xl glow-card h-fit", className)}
+        className={cn("glass p-3 sm:p-4 rounded-xl glow-card h-[500px] flex flex-col", className)}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -49,7 +50,7 @@ export function ModernImpactedComponents({ data, className }: ModernComponentsPr
 
   return (
     <motion.div
-      className={cn("glass p-3 sm:p-4 rounded-xl glow-card h-fit", className)}
+      className={cn("glass p-3 sm:p-4 rounded-xl glow-card h-[500px] flex flex-col", className)}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
@@ -69,10 +70,13 @@ export function ModernImpactedComponents({ data, className }: ModernComponentsPr
         </motion.div>
       </div>
       
-      <div className="space-y-2">
+      <div className="space-y-2 flex-grow overflow-y-auto">
         {data.slice(0, 3).map((component, index) => {
           const IconComponent = componentIcons[component.component as keyof typeof componentIcons] || AlertTriangle;
-          const percentage = (component.crashes / maxCrashes) * 100;
+          // Use API-provided percentage if available, otherwise calculate from max crashes
+          const percentage = component.percentage !== undefined 
+            ? component.percentage 
+            : (component.crashes / maxCrashes) * 100;
           
           return (
             <motion.div

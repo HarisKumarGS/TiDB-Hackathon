@@ -2,7 +2,7 @@ import { Repository, Crash, CrashDetail } from '@/data/mockData';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? '/api' 
-  : 'http://localhost:3001/api';
+  : 'http://127.0.0.1:8000/api/v1';
 
 class ApiService {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
@@ -28,30 +28,39 @@ class ApiService {
 
   // Repository Management
   async getRepositories(): Promise<Repository[]> {
-    return this.request<Repository[]>('/repository');
+    const response = await this.request<{success: boolean, message: string, data: Repository[], total: number}>('/repositories');
+    return response.data || [];
   }
 
   async addRepository(repository: Omit<Repository, 'id'>): Promise<Repository> {
-    return this.request<Repository>('/repository', {
+    const response = await this.request<{success: boolean, message: string, data: Repository}>('/repositories', {
       method: 'POST',
       body: JSON.stringify(repository),
     });
+    return response.data;
   }
 
   async removeRepository(id: string): Promise<void> {
-    return this.request<void>(`/repository/${id}`, {
+    return this.request<void>(`/repositories/${id}`, {
       method: 'DELETE',
     });
   }
 
   // Crash Management
   async getCrashes(repositoryId?: string): Promise<Crash[]> {
-    const query = repositoryId ? `?repositoryId=${repositoryId}` : '';
-    return this.request<Crash[]>(`/crash${query}`);
+    if (repositoryId) {
+      const response = await this.request<{success: boolean, message: string, data: Crash[], total: number}>(`/repositories/${repositoryId}/crashes`);
+      return response.data || [];
+    } else {
+      // Return empty array if no repository ID provided
+      return [];
+    }
   }
 
   async getCrashDetail(id: string): Promise<CrashDetail> {
-    return this.request<CrashDetail>(`/crash/${id}`);
+    // Note: This endpoint may need to be implemented in the backend
+    // For now, we'll throw an error to indicate it's not available
+    throw new Error('Crash detail endpoint not implemented yet');
   }
 
   async updateCrashStatus(
@@ -59,10 +68,11 @@ class ApiService {
     status: 'Resolved' | 'Closed',
     comment?: string
   ): Promise<Crash> {
-    return this.request<Crash>(`/crash/${id}`, {
+    const response = await this.request<{success: boolean, message: string, data: Crash}>(`/crashes/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ status, comment }),
     });
+    return response.data;
   }
 
   async resolveCrash(id: string): Promise<Crash> {

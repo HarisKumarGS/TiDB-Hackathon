@@ -48,7 +48,7 @@ export function ModernSeverityChart({ data, className }: ModernSeverityChartProp
   if (!data || data.length === 0) {
     return (
       <motion.div
-        className={cn("glass p-4 sm:p-6 rounded-xl glow-card overflow-hidden", className)}
+        className={cn("glass p-4 sm:p-6 rounded-xl glow-card overflow-hidden h-[500px] flex flex-col", className)}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -68,7 +68,7 @@ export function ModernSeverityChart({ data, className }: ModernSeverityChartProp
 
   return (
     <motion.div
-      className={cn("glass p-4 sm:p-6 rounded-xl glow-card overflow-hidden", className)}
+      className={cn("glass p-4 sm:p-6 rounded-xl glow-card overflow-hidden h-[500px] flex flex-col", className)}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
@@ -99,7 +99,7 @@ export function ModernSeverityChart({ data, className }: ModernSeverityChartProp
       </motion.div>
 
       {/* Interactive Legend */}
-      <div className="space-y-2">
+      <div className="space-y-2 flex-grow overflow-y-auto">
         {data.map((item, index) => (
             <motion.div
               key={item.name}
