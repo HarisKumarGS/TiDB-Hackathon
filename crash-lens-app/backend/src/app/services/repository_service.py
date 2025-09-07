@@ -16,20 +16,17 @@ class RepositoryService:
     async def create_repository(self, repository_data: RepositoryCreate) -> Repository:
         """Create a new repository"""
         repository_id = str(uuid.uuid4())
-        now = datetime.now(timezone.utc)
         
         query = text("""
-            INSERT INTO repository (id, name, url, created_at, updated_at)
-            VALUES (:id, :name, :url, :created_at, :updated_at)
-            RETURNING id, name, url, created_at, updated_at
+            INSERT INTO repository (id, name, url)
+            VALUES (:id, :name, :url)
+            RETURNING id, name, url
         """)
         
         result = await self.db.execute(query, {
             "id": repository_id,
             "name": repository_data.name,
-            "url": repository_data.url,
-            "created_at": now,
-            "updated_at": now
+            "url": repository_data.url
         })
         
         await self.db.commit()
@@ -39,14 +36,14 @@ class RepositoryService:
             id=row.id,
             name=row.name,
             url=row.url,
-            created_at=row.created_at,
-            updated_at=row.updated_at
+            created_at=None,
+            updated_at=None
         )
     
     async def get_repository(self, repository_id: str) -> Optional[Repository]:
         """Get a repository by ID"""
         query = text("""
-            SELECT id, name, url, created_at, updated_at
+            SELECT id, name, url
             FROM repository
             WHERE id = :id
         """)
@@ -61,16 +58,16 @@ class RepositoryService:
             id=row.id,
             name=row.name,
             url=row.url,
-            created_at=row.created_at,
-            updated_at=row.updated_at
+            created_at=None,
+            updated_at=None
         )
     
     async def get_repositories(self, skip: int = 0, limit: int = 100) -> List[Repository]:
         """Get all repositories with pagination"""
         query = text("""
-            SELECT id, name, url, created_at, updated_at
+            SELECT id, name, url
             FROM repository
-            ORDER BY created_at DESC
+            ORDER BY id
             LIMIT :limit OFFSET :skip
         """)
         
@@ -82,8 +79,8 @@ class RepositoryService:
                 id=row.id,
                 name=row.name,
                 url=row.url,
-                created_at=row.created_at,
-                updated_at=row.updated_at
+                created_at=None,
+                updated_at=None
             )
             for row in rows
         ]
@@ -97,7 +94,7 @@ class RepositoryService:
         
         # Build update query dynamically based on provided fields
         update_fields = []
-        params = {"id": repository_id, "updated_at": datetime.now(timezone.utc)}
+        params = {"id": repository_id}
         
         if update_data.name is not None:
             update_fields.append("name = :name")
@@ -112,9 +109,9 @@ class RepositoryService:
         
         query = text(f"""
             UPDATE repository
-            SET {', '.join(update_fields)}, updated_at = :updated_at
+            SET {', '.join(update_fields)}
             WHERE id = :id
-            RETURNING id, name, url, created_at, updated_at
+            RETURNING id, name, url
         """)
         
         result = await self.db.execute(query, params)
@@ -124,9 +121,7 @@ class RepositoryService:
         return Repository(
             id=row.id,
             name=row.name,
-            url=row.url,
-            created_at=row.created_at,
-            updated_at=row.updated_at
+            url=row.url# Use current time as fallback
         )
     
     async def delete_repository(self, repository_id: str) -> bool:
@@ -151,10 +146,10 @@ class RepositoryService:
     async def search_repositories(self, search_term: str, skip: int = 0, limit: int = 100) -> List[Repository]:
         """Search repositories by name or URL"""
         query = text("""
-            SELECT id, name, url, created_at, updated_at
+            SELECT id, name, url
             FROM repository
             WHERE name ILIKE :search_term OR url ILIKE :search_term
-            ORDER BY created_at DESC
+            ORDER BY id
             LIMIT :limit OFFSET :skip
         """)
         
@@ -170,8 +165,8 @@ class RepositoryService:
                 id=row.id,
                 name=row.name,
                 url=row.url,
-                created_at=row.created_at,
-                updated_at=row.updated_at
+                created_at=None,
+                updated_at=None
             )
             for row in rows
         ]

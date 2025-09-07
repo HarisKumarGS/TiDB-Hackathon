@@ -21,10 +21,10 @@ class RepositoryUpdate(BaseModel):
 
 
 class Repository(RepositoryBase):
-    """Complete repository schema with ID and timestamps"""
+    """Complete repository schema with ID and optional timestamps"""
     id: str = Field(..., description="Repository unique identifier")
-    created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: datetime = Field(..., description="Last update timestamp")
+    created_at: Optional[datetime] = Field(None, description="Creation timestamp")
+    updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
     
     class Config:
         from_attributes = True
