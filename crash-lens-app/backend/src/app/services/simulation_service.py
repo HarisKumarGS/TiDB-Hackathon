@@ -8,6 +8,10 @@ from sqlalchemy import text
 
 from ..models.model import Crash, CrashRCA
 from ..schema.simulation import SimulateCrashRequest, SimulateCrashResponse, ErrorDetails
+from ..schema.repository import CrashRCA as CrashRCASchema
+from .s3_service import S3Service
+from .slack_service import SlackService
+from ..utils.datetime_utils import get_utc_now_naive
 
 
 class SimulationService:
@@ -15,6 +19,8 @@ class SimulationService:
     
     def __init__(self, db_session: AsyncSession):
         self.db = db_session
+        self.s3_service = S3Service()
+        self.slack_service = SlackService()
     
     async def simulate_crash(self, request: SimulateCrashRequest) -> SimulateCrashResponse:
         """Simulate a crash scenario and create database entries"""
@@ -47,11 +53,25 @@ class SimulationService:
         # Generate sample link
         sample_link = f"https://monitoring.example.com/errors/{request.scenario.value}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
-        # For now, we'll skip S3 upload and Slack notifications in the basic implementation
-        # These can be added later as optional features
-        log_file_url = None
-        s3_key = None
-        slack_notification_sent = False
+        # Upload logs to S3
+        log_file_url, s3_key, s3_success = self.s3_service.upload_logs_to_s3(
+            scenario=request.scenario.value,
+            logs=logs,
+            crash_id=crash_id
+        )
+        
+        # Update crash entry with error log URL
+        error_log_updated = await self._update_crash_error_log(crash_id, log_file_url)
+        
+        # Send Slack notification
+        slack_notification_sent = self.slack_service.send_crash_notification(
+            error_details=error_details,
+            s3_url=log_file_url,
+            s3_key=s3_key,
+            users_impacted=users_impacted,
+            sample_link=sample_link,
+            crash_id=crash_id
+        )
         
         return SimulateCrashResponse(
             success=True,
@@ -65,7 +85,7 @@ class SimulationService:
             sample_link=sample_link,
             slack_notification_sent=slack_notification_sent,
             database_entry_created=database_success,
-            message=f"Crash simulation '{request.scenario.value}' completed successfully"
+            message=f"Crash simulation '{request.scenario.value}' completed successfully. Error log URL updated in database: {error_log_updated}"
         )
     
     async def _run_scenario(self, scenario: str, fmt: str, prelude_count: int, jitter: bool) -> Tuple[List[str], str]:
@@ -154,13 +174,13 @@ class SimulationService:
                                 error_details: Dict[str, Any], users_impacted: int) -> bool:
         """Create crash entry in database"""
         try:
-            # Insert crash record
+            # Insert crash record with timestamps
+            now = get_utc_now_naive()
             query = text("""
-                INSERT INTO crash (id, component, error_type, severity, status, impacted_users, comment, repository_id, created_at, updated_at)
-                VALUES (:id, :component, :error_type, :severity, :status, :impacted_users, :comment, :repository_id, :created_at, :updated_at)
+                INSERT INTO crash (id, component, error_type, severity, status, impacted_users, comment, repository_id, error_log, created_at, updated_at)
+                VALUES (:id, :component, :error_type, :severity, :status, :impacted_users, :comment, :repository_id, :error_log, :created_at, :updated_at)
             """)
             
-            now = datetime.now(timezone.utc)
             await self.db.execute(query, {
                 "id": crash_id,
                 "component": error_details["component"],
@@ -170,15 +190,86 @@ class SimulationService:
                 "impacted_users": users_impacted,
                 "comment": request.comment,
                 "repository_id": request.repository_id,
+                "error_log": None,  # Will be updated after S3 upload
                 "created_at": now,
                 "updated_at": now
             })
             
             await self.db.commit()
+            
+            # Create RCA record for the crash
+            rca_success = await self._create_crash_rca(crash_id)
+            if not rca_success:
+                print(f"Warning: Failed to create RCA record for crash {crash_id}")
+            
             return True
             
         except Exception as e:
             print(f"Error creating crash entry: {e}")
+            await self.db.rollback()
+            return False
+    
+    async def _create_crash_rca(self, crash_id: str) -> bool:
+        """Create RCA record for a crash"""
+        try:
+            rca_id = str(uuid.uuid4())
+            now = get_utc_now_naive()
+            
+            query = text("""
+                INSERT INTO crash_rca (id, crash_id, description, problem_identification, 
+                                     data_collection, analysis, root_cause_identification, 
+                                     solution, author, supporting_documents, created_at, updated_at)
+                VALUES (:id, :crash_id, :description, :problem_identification, 
+                       :data_collection, :analysis, :root_cause_identification, 
+                       :solution, :author, :supporting_documents, :created_at, :updated_at)
+            """)
+            
+            await self.db.execute(query, {
+                "id": rca_id,
+                "crash_id": crash_id,
+                "description": None,
+                "problem_identification": None,
+                "data_collection": None,
+                "analysis": None,
+                "root_cause_identification": None,
+                "solution": None,
+                "author": None,
+                "supporting_documents": None,
+                "created_at": now,
+                "updated_at": now
+            })
+            
+            await self.db.commit()
+            print(f"✅ Created RCA record {rca_id} for crash {crash_id}")
+            return True
+            
+        except Exception as e:
+            print(f"Error creating RCA record: {e}")
+            await self.db.rollback()
+            return False
+    
+    async def _update_crash_error_log(self, crash_id: str, error_log_url: str) -> bool:
+        """Update crash entry with error log URL"""
+        try:
+            now = get_utc_now_naive()
+            query = text("""
+                UPDATE crash 
+                SET error_log = :error_log, updated_at = :updated_at
+                WHERE id = :id
+            """)
+            
+            await self.db.execute(query, {
+                "id": crash_id,
+                "error_log": error_log_url,
+                "updated_at": now
+            })
+            
+            await self.db.commit()
+            print(f"✅ Updated crash {crash_id} with error log URL: {error_log_url}")
+            return True
+            
+        except Exception as e:
+            print(f"Error updating crash entry with error log URL: {e}")
             await self.db.rollback()
             return False
     
@@ -197,12 +288,7 @@ class SimulationService:
         """Paystack timeout scenario"""
         logs = []
         
-        # Generate prelude logs
-        for i in range(prelude_count):
-            self._jitter_sleep(enabled=jitter)
-            log_line = f"BACKEND INFO prelude_log_{i} request_id=req_001"
-            logs.append(f"{self._now_iso()} {log_line}")
-        
+        # Skip prelude logs - only generate main scenario logs
         # Main scenario logs
         self._jitter_sleep(enabled=jitter)
         log_line = "BACKEND INFO request_in method=POST path=/cart/checkout user_id=42 request_id=req_001"
@@ -241,11 +327,7 @@ httpx.ConnectTimeout: Timed out while connecting to Paystack
         """Migration type mismatch scenario"""
         logs = []
         
-        for i in range(prelude_count):
-            self._jitter_sleep(enabled=jitter)
-            log_line = f"BACKEND INFO prelude_log_{i} request_id=req_003"
-            logs.append(f"{self._now_iso()} {log_line}")
-        
+        # Skip prelude logs - only generate main scenario logs
         log_line = "BACKEND INFO request_in method=GET path=/order/vendor/ vendor_id=7 request_id=req_003"
         logs.append(f"{self._now_iso()} {log_line}")
         
@@ -275,11 +357,7 @@ TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
         """Task queue oversell scenario"""
         logs = []
         
-        for i in range(prelude_count):
-            self._jitter_sleep(enabled=jitter)
-            log_line = f"TASKQ INFO prelude_log_{i} job_id=job_123"
-            logs.append(f"{self._now_iso()} {log_line}")
-        
+        # Skip prelude logs - only generate main scenario logs
         log_line = "TASKQ INFO enqueue job=add_order_items order_id=123"
         logs.append(f"{self._now_iso()} {log_line}")
         
@@ -306,11 +384,7 @@ quantity
         """Payment verification timeout scenario"""
         logs = []
         
-        for i in range(prelude_count):
-            self._jitter_sleep(enabled=jitter)
-            log_line = f"BACKEND INFO prelude_log_{i} request_id=req_004"
-            logs.append(f"{self._now_iso()} {log_line}")
-        
+        # Skip prelude logs - only generate main scenario logs
         log_line = "BACKEND INFO request_in method=GET path=/cart/verify-payment/REF_ABC request_id=req_004"
         logs.append(f"{self._now_iso()} {log_line}")
         
@@ -340,11 +414,7 @@ httpx.ReadTimeout: Timed out while reading from Paystack
         """Database startup failure scenario"""
         logs = []
         
-        for i in range(prelude_count):
-            self._jitter_sleep(enabled=jitter)
-            log_line = f"BOOT INFO prelude_log_{i} session_id=sess_boot"
-            logs.append(f"{self._now_iso()} {log_line}")
-        
+        # Skip prelude logs - only generate main scenario logs
         log_line = "BOOT INFO starting FastAPI app import=backend.main"
         logs.append(f"{self._now_iso()} {log_line}")
         
@@ -369,11 +439,7 @@ core.errors.DatabaseConnectionError
         """Stripe signature error scenario"""
         logs = []
         
-        for i in range(prelude_count):
-            self._jitter_sleep(enabled=jitter)
-            log_line = f"PAYMENTS INFO prelude_log_{i} session_id=sess_pay"
-            logs.append(f"{self._now_iso()} {log_line}")
-        
+        # Skip prelude logs - only generate main scenario logs
         log_line = "PAYMENTS INFO stripe_checkout_session quantity=2"
         logs.append(f"{self._now_iso()} {log_line}")
         

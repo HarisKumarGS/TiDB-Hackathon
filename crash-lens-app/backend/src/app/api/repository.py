@@ -7,7 +7,10 @@ from ..schema.repository import (
     RepositoryUpdate, 
     Repository, 
     RepositoryResponse, 
-    RepositoryListResponse
+    RepositoryListResponse,
+    RepositoryCrashesResponse,
+    CrashUpdate,
+    CrashResponse
 )
 from ..core.database import get_db
 
@@ -181,4 +184,84 @@ async def delete_repository(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to delete repository: {str(e)}"
+        )
+
+
+@router.get("/repositories/{repository_id}/crashes", response_model=RepositoryCrashesResponse)
+async def get_repository_crashes(
+    repository_id: str,
+    skip: int = Query(0, ge=0, description="Number of crashes to skip"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of crashes to return"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get all crashes for a specific repository.
+    
+    - **repository_id**: The unique identifier of the repository
+    - **skip**: Number of crashes to skip (for pagination)
+    - **limit**: Maximum number of crashes to return (1-1000)
+    """
+    try:
+        repository_service = RepositoryService(db)
+        
+        # First check if repository exists
+        repository = await repository_service.get_repository(repository_id)
+        if not repository:
+            raise HTTPException(
+                status_code=404,
+                detail="Repository not found"
+            )
+        
+        # Get crashes for the repository
+        crashes = await repository_service.get_repository_crashes(repository_id, skip, limit)
+        total = await repository_service.get_repository_crash_count(repository_id)
+        
+        return RepositoryCrashesResponse(
+            success=True,
+            message=f"Retrieved {len(crashes)} crashes for repository '{repository.name}'",
+            data=crashes,
+            total=total
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve repository crashes: {str(e)}"
+        )
+
+
+@router.put("/crashes/{crash_id}", response_model=CrashResponse)
+async def update_crash(
+    crash_id: str,
+    update_data: CrashUpdate,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update a crash record with new status and/or comment.
+    
+    - **crash_id**: The unique identifier of the crash
+    - **update_data**: The fields to update (status and/or comment)
+    """
+    try:
+        repository_service = RepositoryService(db)
+        updated_crash = await repository_service.update_crash(crash_id, update_data)
+        
+        if not updated_crash:
+            raise HTTPException(
+                status_code=404,
+                detail="Crash not found"
+            )
+        
+        return CrashResponse(
+            success=True,
+            message="Crash updated successfully",
+            data=updated_crash
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update crash: {str(e)}"
         )
