@@ -1,0 +1,17 @@
+Error Log File - Scenario: stripe_signature_error
+Generated at: 2025-09-07T21:43:34.223075
+Crash ID: 395db2af-6c5d-4720-ba90-55e76bfea6f3
+==================================================
+
+2025-09-07T16:13:31.281Z PAYMENTS INFO stripe_checkout_session quantity=2
+2025-09-07T16:13:31.366Z PAYMENTS ERROR stripe_checkout_session_failed
+Traceback (most recent call last):
+  File "/Users/hariskumargs/Documents/Personal/TiDB-Hackathon/sample-ecommerce-app/backend/core/stripe_payment.py", line 11, in create_checkout_session
+    session = stripe.checkout.Session.create(
+  File "/usr/local/lib/python3.11/site-packages/stripe/api_resources/abstract/createable_api_resource.py", line 18, in create
+    return super(CreateableAPIResource, cls).create(**params)
+  File "/usr/local/lib/python3.11/site-packages/stripe/api_resources/abstract/api_resource.py", line 668, in create
+    response, api_key = requestor.request("post", url, params, headers)
+  File "/usr/local/lib/python3.11/site-packages/stripe/api_requestor.py", line 201, in request
+    raise error.SignatureVerificationError("Invalid signature")
+stripe.error.SignatureVerificationError: Invalid signature

@@ -87,6 +87,35 @@ class ApiService {
   async getCrashAnalytics(repositoryId: string, timeframe: string) {
     return this.request(`/analytics/${repositoryId}?timeframe=${timeframe}`);
   }
+
+  // Insights
+  async getInsights(repositoryId: string) {
+    const response = await this.request<{
+      total_crashes: number;
+      critical_issues: number;
+      affected_users: number;
+      resolved_today: number;
+      crashes_past_3_days: number;
+      weekly_data: Array<{
+        week: string;
+        crashes: number;
+        resolved: number;
+      }>;
+      severity_breakdown: {
+        critical: number;
+        high: number;
+        medium: number;
+        low: number;
+      };
+      component_breakdown: Array<{
+        component: string;
+        count: number;
+        percentage: number;
+      }>;
+      generated_at: string;
+    }>(`/insights/${repositoryId}`);
+    return response;
+  }
 }
 
 export const apiService = new ApiService();

@@ -1,0 +1,16 @@
+Error Log File - Scenario: verify_payment_timeout
+Generated at: 2025-09-07T21:44:21.648070
+Crash ID: 7ec86e79-7aac-4dd7-a8a8-2210efd61676
+==================================================
+
+2025-09-07T16:14:19.708Z BACKEND INFO request_in method=GET path=/cart/verify-payment/REF_ABC request_id=req_004
+2025-09-07T16:14:19.776Z PAYMENTS INFO verify_paystack payment_ref=REF_ABC
+Traceback (most recent call last):
+  File "/Users/hariskumargs/Documents/Personal/TiDB-Hackathon/sample-ecommerce-app/backend/services/cart_service.py", line 157, in verify_order_payment
+    payment_rsp = await self.paystack.verify_payment(payment_ref=payment_ref)
+  File "/Users/hariskumargs/Documents/Personal/TiDB-Hackathon/sample-ecommerce-app/backend/core/paystack.py", line 53, in verify_payment
+    rsp = await self.client.get(url=f"transaction/verify/{payment_ref}")
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 1734, in _send_single_request
+    raise httpx.ReadTimeout("Timed out while reading from Paystack")
+httpx.ReadTimeout: Timed out while reading from Paystack
+2025-09-07T16:14:19.776Z BACKEND ERROR verify_payment_failed request_id=req_004 status=502

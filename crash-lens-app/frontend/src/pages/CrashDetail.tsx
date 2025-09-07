@@ -109,7 +109,7 @@ export default function CrashDetail() {
                   <Users className="w-8 h-8 text-destructive" />
                   <div>
                     <p className="text-sm text-muted-foreground">Impacted Users</p>
-                    <p className="text-xl font-bold">{crash.impactedUsers.toLocaleString()}</p>
+                    <p className="text-xl font-bold">{crash.impacted_users?.toLocaleString() || '0'}</p>
                   </div>
                 </div>
               </motion.div>
@@ -161,7 +161,7 @@ export default function CrashDetail() {
                   <Clock className="w-8 h-8 text-accent" />
                   <div>
                     <p className="text-sm text-muted-foreground">Error Type</p>
-                    <p className="text-lg font-bold">{crash.errorType}</p>
+                    <p className="text-lg font-bold">{crash.error_type}</p>
                   </div>
                 </div>
               </motion.div>
@@ -176,7 +176,7 @@ export default function CrashDetail() {
             >
               <h3 className="text-lg font-semibold mb-3 gradient-text">Description</h3>
               <p className="text-muted-foreground leading-relaxed">{crash.description}</p>
-              {crash.logfileUrl && (
+              {crash.error_log && (
                 <Button variant="outline" className="mt-4">
                   <FileText className="w-4 h-4 mr-2" />
                   View Log File

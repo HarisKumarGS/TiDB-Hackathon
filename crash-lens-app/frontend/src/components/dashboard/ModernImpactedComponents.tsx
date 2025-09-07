@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { TrendingUp, AlertTriangle, Zap, Activity } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Zap, Activity, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ComponentData {
@@ -14,11 +14,18 @@ interface ModernComponentsProps {
 }
 
 const componentIcons = {
-  UserAuth: AlertTriangle,
-  PaymentProcessor: TrendingUp,
-  DataSync: Activity,
-  ImageUpload: Zap,
-  LocationService: AlertTriangle,
+  'UserAuth': AlertTriangle,
+  'PaymentProcessor': TrendingUp,
+  'DataSync': Activity,
+  'ImageUpload': Zap,
+  'LocationService': AlertTriangle,
+  'PAYMENT SERVICE': TrendingUp,
+  'AUTH SERVICE': AlertTriangle,
+  'DATA SERVICE': Activity,
+  'NOTIFICATION SERVICE': Zap,
+  'USER SERVICE': Users,
+  'ORDER SERVICE': Activity,
+  'INVENTORY SERVICE': AlertTriangle,
 };
 
 export function ModernImpactedComponents({ data, className }: ModernComponentsProps) {
@@ -72,7 +79,7 @@ export function ModernImpactedComponents({ data, className }: ModernComponentsPr
       
       <div className="space-y-2 flex-grow overflow-y-auto">
         {data.slice(0, 3).map((component, index) => {
-          const IconComponent = componentIcons[component.component as keyof typeof componentIcons] || AlertTriangle;
+          const IconComponent = componentIcons[component.component as keyof typeof componentIcons] || Activity;
           // Use API-provided percentage if available, otherwise calculate from max crashes
           const percentage = component.percentage !== undefined 
             ? component.percentage 

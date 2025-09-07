@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   AlertTriangle, 
-  Clock, 
   Users, 
   Search,
   ExternalLink 
@@ -35,17 +34,17 @@ interface CrashTableProps {
 }
 
 const severityColors = {
-  Critical: 'bg-destructive/10 text-destructive border-destructive/20',
-  High: 'bg-warning/10 text-warning border-warning/20',
-  Medium: 'bg-accent/10 text-accent border-accent/20',
-  Low: 'bg-success/10 text-success border-success/20'
+  critical: 'bg-destructive/10 text-destructive border-destructive/20',
+  high: 'bg-warning/10 text-warning border-warning/20',
+  medium: 'bg-accent/10 text-accent border-accent/20',
+  low: 'bg-success/10 text-success border-success/20'
 };
 
 const statusColors = {
-  Open: 'bg-destructive/10 text-destructive border-destructive/20',
-  'In Progress': 'bg-warning/10 text-warning border-warning/20',
-  Resolved: 'bg-success/10 text-success border-success/20',
-  Closed: 'bg-muted/10 text-muted-foreground border-muted/20'
+  open: 'bg-destructive/10 text-destructive border-destructive/20',
+  'in progress': 'bg-warning/10 text-warning border-warning/20',
+  resolved: 'bg-success/10 text-success border-success/20',
+  closed: 'bg-muted/10 text-muted-foreground border-muted/20'
 };
 
 export function CrashTable({ crashes, className }: CrashTableProps) {
@@ -57,11 +56,11 @@ export function CrashTable({ crashes, className }: CrashTableProps) {
   const filteredCrashes = crashes.filter(crash => {
     const matchesSearch = 
       crash.component.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      crash.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      crash.errorType.toLowerCase().includes(searchTerm.toLowerCase());
+      (crash.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (crash.error_type || '').toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesSeverity = severityFilter === 'all' || crash.severity === severityFilter;
-    const matchesStatus = statusFilter === 'all' || crash.status === statusFilter;
+    const matchesSeverity = severityFilter === 'all' || crash.severity?.toLowerCase() === severityFilter;
+    const matchesStatus = statusFilter === 'all' || crash.status?.toLowerCase() === statusFilter;
     
     return matchesSearch && matchesSeverity && matchesStatus;
   });
@@ -102,10 +101,10 @@ export function CrashTable({ crashes, className }: CrashTableProps) {
               </SelectTrigger>
               <SelectContent className="bg-card border border-border z-50">
                 <SelectItem value="all">All Severity</SelectItem>
-                <SelectItem value="Critical">Critical</SelectItem>
-                <SelectItem value="High">High</SelectItem>
-                <SelectItem value="Medium">Medium</SelectItem>
-                <SelectItem value="Low">Low</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
               </SelectContent>
             </Select>
           
@@ -115,10 +114,10 @@ export function CrashTable({ crashes, className }: CrashTableProps) {
               </SelectTrigger>
               <SelectContent className="bg-card border border-border z-50">
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Open">Open</SelectItem>
-                <SelectItem value="In Progress">In Progress</SelectItem>
-                <SelectItem value="Resolved">Resolved</SelectItem>
-                <SelectItem value="Closed">Closed</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="in progress">In Progress</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -130,13 +129,11 @@ export function CrashTable({ crashes, className }: CrashTableProps) {
         <Table>
           <TableHeader>
             <TableRow className="border-border/30 hover:bg-transparent">
-              <TableHead className="whitespace-nowrap">Crash ID</TableHead>
               <TableHead className="whitespace-nowrap">Component</TableHead>
-              <TableHead className="whitespace-nowrap hidden sm:table-cell">Error Type</TableHead>
+              <TableHead className="whitespace-nowrap">Error Type</TableHead>
               <TableHead className="whitespace-nowrap">Severity</TableHead>
               <TableHead className="whitespace-nowrap hidden md:table-cell">Status</TableHead>
-              <TableHead className="whitespace-nowrap hidden lg:table-cell">Impacted Users</TableHead>
-              <TableHead className="whitespace-nowrap hidden xl:table-cell">Timestamp</TableHead>
+              <TableHead className="whitespace-nowrap">Impacted Users</TableHead>
               <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
@@ -151,20 +148,15 @@ export function CrashTable({ crashes, className }: CrashTableProps) {
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ scale: 1.01 }}
               >
-                <TableCell className="font-mono text-xs sm:text-sm">
-                  <span className="truncate block max-w-[80px] sm:max-w-none">
-                    {crash.id}
-                  </span>
-                </TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2 min-w-0">
                     <AlertTriangle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                     <span className="font-medium truncate">{crash.component}</span>
                   </div>
                 </TableCell>
-                <TableCell className="font-mono text-xs sm:text-sm hidden sm:table-cell">
-                  <span className="truncate block max-w-[100px] lg:max-w-none">
-                    {crash.errorType}
+                <TableCell>
+                  <span className="text-sm font-mono truncate block max-w-[150px] lg:max-w-none">
+                    {crash.error_type || 'Unknown'}
                   </span>
                 </TableCell>
                 <TableCell>
@@ -183,18 +175,10 @@ export function CrashTable({ crashes, className }: CrashTableProps) {
                     {crash.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="hidden lg:table-cell">
+                <TableCell>
                   <div className="flex items-center space-x-1">
                     <Users className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">{crash.impactedUsers.toLocaleString()}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="hidden xl:table-cell">
-                  <div className="flex items-center space-x-1">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      {new Date(crash.timestamp).toLocaleDateString()}
-                    </span>
+                    <span className="text-sm">{crash.impacted_users?.toLocaleString() || '0'}</span>
                   </div>
                 </TableCell>
                 <TableCell>

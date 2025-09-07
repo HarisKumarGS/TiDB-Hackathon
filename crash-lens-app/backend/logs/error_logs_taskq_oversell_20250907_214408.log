@@ -1,0 +1,15 @@
+Error Log File - Scenario: taskq_oversell
+Generated at: 2025-09-07T21:44:08.871649
+Crash ID: b72df5ce-6079-4421-b255-c4ec11081931
+==================================================
+
+2025-09-07T16:14:06.947Z TASKQ INFO enqueue job=add_order_items order_id=123
+2025-09-07T16:14:07.005Z TASKQ ERROR add_order_items_failed reason=oversell_detected sku=SKU-001 stock=1 requested=2
+Traceback (most recent call last):
+  File "/Users/hariskumargs/Documents/Personal/TiDB-Hackathon/sample-ecommerce-app/backend/task_queue/tasks/cart_tasks.py", line 47, in add_order_items
+    order_item = OrderItemsCreate(
+  File "pydantic/main.py", line 341, in pydantic.main.BaseModel.__init__
+    raise ValidationError(model='OrderItemsCreate', errors=[{'loc': ('quantity',), 'msg': 'oversell', 'type': 'value_error'}])
+pydantic.error_wrappers.ValidationError: 1 validation error for OrderItemsCreate
+quantity
+  oversell (type=value_error)

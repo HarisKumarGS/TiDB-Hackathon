@@ -1,0 +1,16 @@
+Error Log File - Scenario: migration_type_mismatch
+Generated at: 2025-09-07T21:44:00.756900
+Crash ID: bae030f6-1ee2-4138-8459-2f6e92f8be81
+==================================================
+
+2025-09-07T16:13:58.779Z BACKEND INFO request_in method=GET path=/order/vendor/ vendor_id=7 request_id=req_003
+2025-09-07T16:13:58.835Z BACKEND ERROR vendor_dashboard_failed reason=type_mismatch_in_price_field migration=160dd810dc36
+Traceback (most recent call last):
+  File "/Users/hariskumargs/Documents/Personal/TiDB-Hackathon/sample-ecommerce-app/backend/api/endpoints/order.py", line 29, in vendor_dashboard
+    return await order_service.vendor_dashboard(vendor_id=current_user.role_id)
+  File "/Users/hariskumargs/Documents/Personal/TiDB-Hackathon/sample-ecommerce-app/backend/services/order_service.py", line 35, in vendor_dashboard
+    total_sales = sum([item.price * item.quantity for item in order_items])
+  File "/Users/hariskumargs/Documents/Personal/TiDB-Hackathon/sample-ecommerce-app/backend/services/order_service.py", line 35, in <listcomp>
+    total_sales = sum([item.price * item.quantity for item in order_items])
+TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
+2025-09-07T16:13:58.835Z BACKEND INFO response_out status=500 path=/order/vendor/ request_id=req_003

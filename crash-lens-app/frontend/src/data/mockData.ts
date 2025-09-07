@@ -12,15 +12,17 @@ export interface Repository {
 
 export interface Crash {
   id: string;
-  repositoryId: string;
-  timestamp: string;
-  severity: 'Critical' | 'High' | 'Medium' | 'Low';
-  status: 'Open' | 'In Progress' | 'Resolved' | 'Closed';
+  repository_id: string;
+  created_at: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  status: 'open' | 'in progress' | 'resolved' | 'closed';
   component: string;
-  errorType: string;
-  description: string;
-  impactedUsers: number;
-  logfileUrl?: string;
+  error_type: string;
+  description?: string;
+  impacted_users: number;
+  comment?: string;
+  error_log?: string;
+  updated_at?: string;
 }
 
 export interface CrashDetail extends Crash {
@@ -46,6 +48,38 @@ export interface CrashDetail extends Crash {
     url: string;
     type: string;
   }>;
+}
+
+// Insights API interfaces
+export interface WeeklyCrashData {
+  week: string;
+  crashes: number;
+  resolved: number;
+}
+
+export interface SeverityCount {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
+export interface ComponentCount {
+  component: string;
+  count: number;
+  percentage: number;
+}
+
+export interface InsightsData {
+  total_crashes: number;
+  critical_issues: number;
+  affected_users: number;
+  resolved_today: number;
+  crashes_past_3_days: number;
+  weekly_data: WeeklyCrashData[];
+  severity_breakdown: SeverityCount;
+  component_breakdown: ComponentCount[];
+  generated_at: string;
 }
 
 export const mockRepositories: Repository[] = [
@@ -78,63 +112,63 @@ export const mockRepositories: Repository[] = [
 export const mockCrashes: Crash[] = [
   {
     id: 'crash-1',
-    repositoryId: 'repo-1',
-    timestamp: '2024-01-15T10:30:00Z',
-    severity: 'Critical',
-    status: 'Open',
+    repository_id: 'repo-1',
+    created_at: '2024-01-15T10:30:00Z',
+    severity: 'critical',
+    status: 'open',
     component: 'UserAuth',
-    errorType: 'NullPointerException',
+    error_type: 'NullPointerException',
     description: 'Authentication service crashes during OAuth callback',
-    impactedUsers: 1250,
-    logfileUrl: '/logs/crash-1.log'
+    impacted_users: 1250,
+    error_log: '/logs/crash-1.log'
   },
   {
     id: 'crash-2',
-    repositoryId: 'repo-1',
-    timestamp: '2024-01-15T09:15:00Z',
-    severity: 'High',
-    status: 'In Progress',
+    repository_id: 'repo-1',
+    created_at: '2024-01-15T09:15:00Z',
+    severity: 'high',
+    status: 'in progress',
     component: 'PaymentProcessor',
-    errorType: 'TimeoutException',
+    error_type: 'TimeoutException',
     description: 'Payment processing timeout during peak hours',
-    impactedUsers: 892,
-    logfileUrl: '/logs/crash-2.log'
+    impacted_users: 892,
+    error_log: '/logs/crash-2.log'
   },
   {
     id: 'crash-3',
-    repositoryId: 'repo-2',
-    timestamp: '2024-01-14T08:15:00Z',
-    severity: 'Medium',
-    status: 'Resolved',
+    repository_id: 'repo-2',
+    created_at: '2024-01-14T08:15:00Z',
+    severity: 'medium',
+    status: 'resolved',
     component: 'DataSync',
-    errorType: 'DatabaseException',
+    error_type: 'DatabaseException',
     description: 'Database connection pool exhaustion',
-    impactedUsers: 450,
-    logfileUrl: '/logs/crash-3.log'
+    impacted_users: 450,
+    error_log: '/logs/crash-3.log'
   },
   {
     id: 'crash-4',
-    repositoryId: 'repo-1',
-    timestamp: '2024-01-14T14:22:00Z',
-    severity: 'Low',
-    status: 'Closed',
+    repository_id: 'repo-1',
+    created_at: '2024-01-14T14:22:00Z',
+    severity: 'low',
+    status: 'closed',
     component: 'ImageUpload',
-    errorType: 'ValidationError',
+    error_type: 'ValidationError',
     description: 'File size validation bypass causing memory overflow',
-    impactedUsers: 23,
-    logfileUrl: '/logs/crash-4.log'
+    impacted_users: 23,
+    error_log: '/logs/crash-4.log'
   },
   {
     id: 'crash-5',
-    repositoryId: 'repo-3',
-    timestamp: '2024-01-13T16:45:00Z',
-    severity: 'Critical',
-    status: 'Open',
+    repository_id: 'repo-3',
+    created_at: '2024-01-13T16:45:00Z',
+    severity: 'critical',
+    status: 'open',
     component: 'LocationService',
-    errorType: 'PermissionException',
+    error_type: 'PermissionException',
     description: 'GPS permission denial crashes the app on startup',
-    impactedUsers: 2100,
-    logfileUrl: '/logs/crash-5.log'
+    impacted_users: 2100,
+    error_log: '/logs/crash-5.log'
   }
 ];
 

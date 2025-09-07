@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Repository, Crash } from '@/data/mockData';
+import { Repository, Crash, InsightsData } from '@/data/mockData';
 import { apiService } from '@/services/apiService';
 
 export default function Dashboard() {
@@ -34,13 +34,49 @@ export default function Dashboard() {
   const [crashes, setCrashes] = useState<Crash[]>([]);
   const [isLoadingCrashes, setIsLoadingCrashes] = useState(false);
   const [crashError, setCrashError] = useState<string | null>(null);
+  const [insights, setInsights] = useState<InsightsData | null>(null);
+  const [isLoadingInsights, setIsLoadingInsights] = useState(false);
+  const [insightsError, setInsightsError] = useState<string | null>(null);
 
-  // Placeholder chart data - replace with API data when available
+  // Fetch insights for selected repository
+  const fetchInsights = async (repositoryId?: string) => {
+    if (!repositoryId) {
+      setInsights(null);
+      return;
+    }
+
+    try {
+      setIsLoadingInsights(true);
+      setInsightsError(null);
+      const insightsData = await apiService.getInsights(repositoryId);
+      setInsights(insightsData);
+    } catch (error) {
+      console.error('Failed to fetch insights:', error);
+      setInsightsError('Failed to load insights. Please try again later.');
+      setInsights(null);
+    } finally {
+      setIsLoadingInsights(false);
+    }
+  };
+
+  // Transform insights data for chart components
   const chartData = {
-    crashRateByDay: [],
-    weeklyTrend: [],
-    severityDistribution: [],
-    topComponents: []
+    crashRateByDay: insights?.weekly_data.map((week, index) => ({
+      date: `Week ${index + 1}`,
+      crashes: week.crashes
+    })) || [],
+    weeklyTrend: insights?.weekly_data || [],
+    severityDistribution: insights ? [
+      { name: 'Critical', value: insights.severity_breakdown.critical, color: '#ef4444' },
+      { name: 'High', value: insights.severity_breakdown.high, color: '#f97316' },
+      { name: 'Medium', value: insights.severity_breakdown.medium, color: '#eab308' },
+      { name: 'Low', value: insights.severity_breakdown.low, color: '#22c55e' }
+    ].filter(item => item.value > 0) : [], // Only show severities with data
+    topComponents: insights?.component_breakdown.map(comp => ({
+      component: comp.component.replace(/_/g, ' '), // Convert PAYMENT_SERVICE to PAYMENT SERVICE
+      crashes: comp.count,
+      percentage: comp.percentage
+    })) || []
   };
 
   // Fetch crashes for selected repository
@@ -84,12 +120,14 @@ export default function Dashboard() {
     fetchRepositories();
   }, []);
 
-  // Fetch crashes when selected repository changes
+  // Fetch crashes and insights when selected repository changes
   useEffect(() => {
     if (selectedRepo) {
       fetchCrashes(selectedRepo);
+      fetchInsights(selectedRepo);
     } else {
       fetchCrashes(); // Fetch all crashes if no repository selected
+      setInsights(null); // Clear insights if no repository selected
     }
   }, [selectedRepo]);
 
@@ -157,38 +195,60 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
             title="Total Crashes"
-            value="46"
+            value={isLoadingInsights ? "..." : insights?.total_crashes.toString() || "0"}
             change={{ value: "12%", type: "increase" }}
             icon={AlertTriangle}
           />
           <StatCard
             title="Critical Issues"
-            value="8"
+            value={isLoadingInsights ? "..." : insights?.critical_issues.toString() || "0"}
             change={{ value: "3%", type: "decrease" }}
             icon={TrendingUp}
           />
           <StatCard
             title="Affected Users"
-            value="4.2K"
+            value={isLoadingInsights ? "..." : insights?.affected_users ? `${(insights.affected_users / 1000).toFixed(1)}K` : "0"}
             change={{ value: "8%", type: "increase" }}
             icon={Users}
           />
           <StatCard
             title="Resolved Today"
-            value="12"
+            value={isLoadingInsights ? "..." : insights?.resolved_today.toString() || "0"}
             change={{ value: "25%", type: "increase" }}
             icon={CheckCircle}
           />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ModernSeverityChart 
-            data={chartData.severityDistribution}
-          />
-          
-          <ModernImpactedComponents 
-            data={chartData.topComponents}
-          />
+          {isLoadingInsights ? (
+            <>
+              <div className="flex items-center justify-center p-8 h-[500px]">
+                <div className="text-muted-foreground">Loading insights...</div>
+              </div>
+              <div className="flex items-center justify-center p-8 h-[500px]">
+                <div className="text-muted-foreground">Loading insights...</div>
+              </div>
+            </>
+          ) : insightsError ? (
+            <>
+              <div className="flex items-center justify-center p-8 h-[500px]">
+                <div className="text-red-500">{insightsError}</div>
+              </div>
+              <div className="flex items-center justify-center p-8 h-[500px]">
+                <div className="text-red-500">{insightsError}</div>
+              </div>
+            </>
+          ) : (
+            <>
+              <ModernSeverityChart 
+                data={chartData.severityDistribution}
+              />
+              
+              <ModernImpactedComponents 
+                data={chartData.topComponents}
+              />
+            </>
+          )}
         </div>
 
         {/* Recent Crashes Table */}
