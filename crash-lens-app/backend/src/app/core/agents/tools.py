@@ -9,13 +9,35 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-voyager = voyageai.Client(api_key=os.getenv("VOYAGE_API_KEY"))
-vector_client = TiDBVectorClient(
-    connection_string=os.getenv("TIDB_CONNECTION_STRING"),
-    vector_dimension=1024,
-    table_name="sample_ecommerce_app_code",
-    drop_existing_table=False,
-)
+_voyager_client: voyageai.Client | None = None
+_vector_client: TiDBVectorClient | None = None
+
+
+def _get_voyager_client() -> voyageai.Client:
+    global _voyager_client
+    if _voyager_client is not None:
+        return _voyager_client
+    api_key = os.getenv("VOYAGE_API_KEY")
+    if not api_key:
+        raise RuntimeError("VOYAGE_API_KEY is not set")
+    _voyager_client = voyageai.Client(api_key=api_key)
+    return _voyager_client
+
+
+def _get_vector_client() -> TiDBVectorClient:
+    global _vector_client
+    if _vector_client is not None:
+        return _vector_client
+    conn = os.getenv("TIDB_CONNECTION_STRING")
+    if not conn:
+        raise RuntimeError("TIDB_CONNECTION_STRING is not set")
+    _vector_client = TiDBVectorClient(
+        connection_string=conn,
+        vector_dimension=1024,
+        table_name="sample_ecommerce_app_code",
+        drop_existing_table=False,
+    )
+    return _vector_client
 
 
 @tool
@@ -26,6 +48,8 @@ def get_data_from_embeddings(
     """Retrieves the AST semantic nodes (abstract syntax tree–based code representations enriched with semantic metadata)
     of the project’s codebase from the vector database. This allows the agent to access relevant code structure, symbols,
     and relationships for tasks like debugging, refactoring, or answering stack-trace–related queries"""
+    voyager = _get_voyager_client()
+    vector_client = _get_vector_client()
     query_embedding = voyager.embed(
         texts=[query], model="voyage-code-3", input_type="query"
     ).embeddings[0]

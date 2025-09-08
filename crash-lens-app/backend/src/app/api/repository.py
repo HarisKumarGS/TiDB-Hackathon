@@ -11,6 +11,7 @@ from ..schema.repository import (
     RepositoryCrashesResponse,
     CrashUpdate,
     CrashResponse,
+    CrashRCAResponse,
 )
 from ..core.database import get_db
 
@@ -240,3 +241,40 @@ async def update_crash(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update crash: {str(e)}")
+
+
+@router.get("/crashes/{crash_id}/rca", response_model=CrashRCAResponse)
+async def get_crash_rca(crash_id: str, db: AsyncSession = Depends(get_db)):
+    """
+    Get the RCA document associated with a crash.
+
+    - **crash_id**: The unique identifier of the crash
+    """
+    try:
+        repository_service = RepositoryService(db)
+
+        # Ensure crash exists
+        crash = await repository_service.get_crash(crash_id)
+        if not crash:
+            raise HTTPException(status_code=404, detail="Crash not found")
+
+        # Fetch RCA
+        rca = await repository_service.get_crash_rca(crash_id)
+        if not rca:
+            return CrashRCAResponse(
+                success=True,
+                message="No RCA found for this crash",
+                data=None,
+            )
+
+        return CrashRCAResponse(
+            success=True,
+            message="RCA retrieved successfully",
+            data=rca,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to retrieve crash RCA: {str(e)}"
+        )
