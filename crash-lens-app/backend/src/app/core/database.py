@@ -5,7 +5,7 @@ import os
 # Database URL - configured for PostgreSQL
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql+asyncpg://postgres:postgres@tidb-hackathon-instance.cdgkfoacvf6u.us-east-1.rds.amazonaws.com:5432/crashlens"
+    "postgresql+asyncpg://postgres:postgres@tidb-hackathon-instance.cdgkfoacvf6u.us-east-1.rds.amazonaws.com:5432/postgres"
 )
 
 # Create async engine
