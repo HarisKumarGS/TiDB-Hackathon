@@ -4,16 +4,18 @@ from typing import Optional, List
 
 class Repository(BaseModel):
     """Repository model"""
+
     id: str = Field(..., max_length=255)
     name: str = Field(..., max_length=255)
     url: str = Field(..., max_length=255)
-    
+
     class Config:
         from_attributes = True
 
 
 class Crash(BaseModel):
     """Crash model"""
+
     id: str
     component: str = Field(..., max_length=255)
     error_type: str = Field(..., max_length=255)
@@ -22,13 +24,14 @@ class Crash(BaseModel):
     impacted_users: int
     comment: Optional[str] = Field(None, max_length=500)
     repository_id: str
-    
+
     class Config:
         from_attributes = True
 
 
 class CrashRCA(BaseModel):
     """Crash RCA model"""
+
     id: str
     crash_id: str
     description: Optional[str] = None
@@ -39,6 +42,6 @@ class CrashRCA(BaseModel):
     solution: Optional[str] = None
     author: Optional[List[str]] = None
     supporting_documents: Optional[List[str]] = None
-    
+
     class Config:
         from_attributes = True

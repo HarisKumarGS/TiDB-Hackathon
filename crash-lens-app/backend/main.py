@@ -8,7 +8,7 @@ from src.app.api.status import router as status_router
 app = FastAPI(
     title="Crash Lens API",
     description="API for crash analysis and insights",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Add CORS middleware
@@ -25,6 +25,7 @@ app.include_router(insights_router, prefix="/api/v1")
 app.include_router(simulation_router, prefix="/api/v1")
 app.include_router(repository_router, prefix="/api/v1")
 app.include_router(status_router, prefix="/api/v1")
+
 
 @app.get("/")
 def read_root():

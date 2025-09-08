@@ -3,21 +3,29 @@ from ..parser import ASTSemanticNode
 from ..parser import AstCodeParser
 import voyageai
 from tidb_vector.integrations import TiDBVectorClient
+from git import Repo
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class CodeIndexer:
-    def __init__(self):
+    def __init__(self, repo_id: str, repo_url: str):
+        self.id = repo_id
+        print(f"cloning repository {repo_id}")
+        Repo.clone_from(repo_url, f"./repo-{repo_id}")
         self.voyager = voyageai.Client(api_key=os.getenv("VOYAGE_API_KEY"))
         self.vector_client = TiDBVectorClient(
             connection_string=os.getenv("TIDB_CONNECTION_STRING"),
             vector_dimension=1024,
-            table_name="sample_ecommerce_app_code",
+            table_name=f"code_indexer_{repo_id}",
             drop_existing_table=False,
         )
 
-    def index(self, dir: str):
+    def index(self):
+        print("indexing repository {repo_id}".format(repo_id=str(self.id)))
         parser = AstCodeParser()
-        for root, dir, files in os.walk(dir):
+        for root, dir, files in os.walk(f"./repo-{self.id}"):
             for file in files:
                 file_path = os.path.join(root, file)
                 nodes = parser.parse_file_to_ast(file_path)

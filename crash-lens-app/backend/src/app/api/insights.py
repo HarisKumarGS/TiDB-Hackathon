@@ -9,15 +9,12 @@ router = APIRouter()
 
 
 @router.get("/insights/{repository_id}", response_model=InsightsResponse)
-async def get_insights(
-    repository_id: str,
-    db: AsyncSession = Depends(get_db)
-):
+async def get_insights(repository_id: str, db: AsyncSession = Depends(get_db)):
     """
     Get comprehensive insights about crashes and issues for a specific repository.
-    
+
     - **repository_id**: The unique identifier of the repository
-    
+
     Returns:
     - Total number of crashes, critical issues, and affected users for the repository
     - Number of issues resolved today for the repository
@@ -31,11 +28,8 @@ async def get_insights(
         repository_service = RepositoryService(db)
         repository = await repository_service.get_repository(repository_id)
         if not repository:
-            raise HTTPException(
-                status_code=404,
-                detail="Repository not found"
-            )
-        
+            raise HTTPException(status_code=404, detail="Repository not found")
+
         insights_service = InsightsService(db)
         insights = await insights_service.get_insights(repository_id)
         return insights
@@ -43,6 +37,5 @@ async def get_insights(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to generate insights: {str(e)}"
+            status_code=500, detail=f"Failed to generate insights: {str(e)}"
         )

@@ -24,9 +24,11 @@ async def get_all_services_status():
     """Get status of all external services"""
     s3_service = S3Service()
     slack_service = SlackService()
-    
+
     return {
         "s3": s3_service.get_bucket_info(),
         "slack": slack_service.get_channel_info(),
-        "overall_status": "healthy" if s3_service.is_available() and slack_service.is_available() else "degraded"
+        "overall_status": "healthy"
+        if s3_service.is_available() and slack_service.is_available()
+        else "degraded",
     }

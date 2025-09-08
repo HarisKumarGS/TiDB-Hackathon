@@ -7,8 +7,8 @@ load_dotenv()
 
 # Database URL - you'll need to configure this based on your database setup
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://postgres:postgres@tidb-hackathon-instance.cdgkfoacvf6u.us-east-1.rds.amazonaws.com:5432/crash_lens"
+    "DATABASE_URL",
+    "postgresql://postgres:postgres@tidb-hackathon-instance.cdgkfoacvf6u.us-east-1.rds.amazonaws.com:5432/crash_lens",
 )
 
 # Create async engine
@@ -16,9 +16,7 @@ engine = create_async_engine(DATABASE_URL, echo=True)
 
 # Create async session maker
 AsyncSessionLocal = async_sessionmaker(
-    engine, 
-    class_=AsyncSession, 
-    expire_on_commit=False
+    engine, class_=AsyncSession, expire_on_commit=False
 )
 
 # Base class for models

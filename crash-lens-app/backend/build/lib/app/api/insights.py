@@ -11,7 +11,7 @@ router = APIRouter()
 async def get_insights(db: AsyncSession = Depends(get_db)):
     """
     Get comprehensive insights about crashes and issues.
-    
+
     Returns:
     - Total number of crashes, critical issues, and affected users
     - Number of issues resolved today
@@ -26,6 +26,5 @@ async def get_insights(db: AsyncSession = Depends(get_db)):
         return insights
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to generate insights: {str(e)}"
+            status_code=500, detail=f"Failed to generate insights: {str(e)}"
         )
