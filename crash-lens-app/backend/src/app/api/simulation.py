@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..services.simulation_service import SimulationService
 from ..schema.simulation import SimulateCrashRequest, SimulateCrashResponse
@@ -9,7 +9,8 @@ router = APIRouter()
 
 @router.post("/simulate-crash", response_model=SimulateCrashResponse)
 async def simulate_crash(
-    request: SimulateCrashRequest, db: AsyncSession = Depends(get_db)
+    request: SimulateCrashRequest, background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Simulate a crash scenario and generate realistic logs.
@@ -27,7 +28,7 @@ async def simulate_crash(
     """
     try:
         simulation_service = SimulationService(db)
-        result = await simulation_service.simulate_crash(request)
+        result = await simulation_service.simulate_crash(request, background_tasks)
         return result
     except ValueError as e:
         raise HTTPException(
