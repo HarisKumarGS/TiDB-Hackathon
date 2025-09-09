@@ -3,16 +3,17 @@ import uuid
 import os
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Tuple, Optional
+
+from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
-from ..models.model import Crash, CrashRCA
+from src.app.core import error_analyzer_agent_executor
 from ..schema.simulation import (
     SimulateCrashRequest,
     SimulateCrashResponse,
     ErrorDetails,
 )
-from ..schema.repository import CrashRCA as CrashRCASchema
 from .s3_service import S3Service
 from .slack_service import SlackService
 from ..utils.datetime_utils import get_utc_now_naive
@@ -26,8 +27,13 @@ class SimulationService:
         self.s3_service = S3Service()
         self.slack_service = SlackService()
 
+    def _trigger_agent(self, crash_content):
+        error_analyzer_agent_executor.invoke({"messages": [{"role": "user", "content": crash_content}]})
+        print("Agent completed the task")
+
     async def simulate_crash(
-        self, request: SimulateCrashRequest
+            self, request: SimulateCrashRequest,
+            background_tasks: BackgroundTasks,
     ) -> SimulateCrashResponse:
         """Simulate a crash scenario and create database entries"""
 
@@ -69,6 +75,8 @@ class SimulationService:
         # Update crash entry with error log URL
         error_log_updated = await self._update_crash_error_log(crash_id, log_file_url)
 
+        background_tasks.add_task(self._trigger_agent, f"{traceback_text}\n crash id: {crash_id}")
+
         # Send Slack notification
         slack_notification_sent = self.slack_service.send_crash_notification(
             error_details=error_details,
@@ -95,7 +103,7 @@ class SimulationService:
         )
 
     async def _run_scenario(
-        self, scenario: str, fmt: str, prelude_count: int, jitter: bool
+            self, scenario: str, fmt: str, prelude_count: int, jitter: bool
     ) -> Tuple[List[str], str]:
         """Run the specified crash scenario and return logs and traceback"""
 
@@ -116,7 +124,7 @@ class SimulationService:
         return func(fmt, jitter, prelude_count)
 
     def _analyze_error_from_traceback(
-        self, traceback: str, scenario: str
+            self, traceback: str, scenario: str
     ) -> Dict[str, Any]:
         """Analyze the stack trace to extract error details"""
         error_details = {
@@ -181,20 +189,22 @@ class SimulationService:
         return error_details
 
     async def _create_crash_entry(
-        self,
-        crash_id: str,
-        request: SimulateCrashRequest,
-        error_details: Dict[str, Any],
-        users_impacted: int,
+            self,
+            crash_id: str,
+            request: SimulateCrashRequest,
+            error_details: Dict[str, Any],
+            users_impacted: int,
     ) -> bool:
         """Create crash entry in database"""
         try:
             # Insert crash record with timestamps
             now = get_utc_now_naive()
             query = text("""
-                INSERT INTO crash (id, component, error_type, severity, status, impacted_users, comment, repository_id, error_log, created_at, updated_at)
-                VALUES (:id, :component, :error_type, :severity, :status, :impacted_users, :comment, :repository_id, :error_log, :created_at, :updated_at)
-            """)
+                         INSERT INTO crash (id, component, error_type, severity, status, impacted_users, comment,
+                                            repository_id, error_log, created_at, updated_at)
+                         VALUES (:id, :component, :error_type, :severity, :status, :impacted_users, :comment,
+                                 :repository_id, :error_log, :created_at, :updated_at)
+                         """)
 
             await self.db.execute(
                 query,
@@ -234,13 +244,13 @@ class SimulationService:
             now = get_utc_now_naive()
 
             query = text("""
-                INSERT INTO crash_rca (id, crash_id, description, problem_identification, 
-                                     data_collection, analysis, root_cause_identification, 
-                                     solution, author, supporting_documents, created_at, updated_at)
-                VALUES (:id, :crash_id, :description, :problem_identification, 
-                       :data_collection, :analysis, :root_cause_identification, 
-                       :solution, :author, :supporting_documents, :created_at, :updated_at)
-            """)
+                         INSERT INTO crash_rca (id, crash_id, description, problem_identification,
+                                                data_collection, analysis, root_cause_identification,
+                                                solution, author, supporting_documents, created_at, updated_at)
+                         VALUES (:id, :crash_id, :description, :problem_identification,
+                                 :data_collection, :analysis, :root_cause_identification,
+                                 :solution, :author, :supporting_documents, :created_at, :updated_at)
+                         """)
 
             await self.db.execute(
                 query,
@@ -274,10 +284,11 @@ class SimulationService:
         try:
             now = get_utc_now_naive()
             query = text("""
-                UPDATE crash 
-                SET error_log = :error_log, updated_at = :updated_at
-                WHERE id = :id
-            """)
+                         UPDATE crash
+                         SET error_log  = :error_log,
+                             updated_at = :updated_at
+                         WHERE id = :id
+                         """)
 
             await self.db.execute(
                 query, {"id": crash_id, "error_log": error_log_url, "updated_at": now}
@@ -301,7 +312,7 @@ class SimulationService:
         )
 
     def _jitter_sleep(
-        self, min_ms: int = 40, max_ms: int = 140, enabled: bool = True
+            self, min_ms: int = 40, max_ms: int = 140, enabled: bool = True
     ) -> None:
         """Add jitter sleep for realistic timing"""
         if not enabled:
@@ -311,7 +322,7 @@ class SimulationService:
         time.sleep(random.uniform(min_ms / 1000.0, max_ms / 1000.0))
 
     def _scenario_paystack_timeout(
-        self, fmt: str, jitter: bool, prelude_count: int
+            self, fmt: str, jitter: bool, prelude_count: int
     ) -> Tuple[List[str], str]:
         """Paystack timeout scenario"""
         logs = []
@@ -352,7 +363,7 @@ httpx.ConnectTimeout: Timed out while connecting to Paystack
         return logs, traceback_text
 
     def _scenario_migration_type_mismatch(
-        self, fmt: str, jitter: bool, prelude_count: int
+            self, fmt: str, jitter: bool, prelude_count: int
     ) -> Tuple[List[str], str]:
         """Migration type mismatch scenario"""
         logs = []
@@ -384,7 +395,7 @@ TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'
         return logs, traceback_text
 
     def _scenario_taskq_oversell(
-        self, fmt: str, jitter: bool, prelude_count: int
+            self, fmt: str, jitter: bool, prelude_count: int
     ) -> Tuple[List[str], str]:
         """Task queue oversell scenario"""
         logs = []
@@ -413,7 +424,7 @@ quantity
         return logs, traceback_text
 
     def _scenario_verify_payment_timeout(
-        self, fmt: str, jitter: bool, prelude_count: int
+            self, fmt: str, jitter: bool, prelude_count: int
     ) -> Tuple[List[str], str]:
         """Payment verification timeout scenario"""
         logs = []
@@ -445,7 +456,7 @@ httpx.ReadTimeout: Timed out while reading from Paystack
         return logs, traceback_text
 
     def _scenario_db_startup_failure(
-        self, fmt: str, jitter: bool, prelude_count: int
+            self, fmt: str, jitter: bool, prelude_count: int
     ) -> Tuple[List[str], str]:
         """Database startup failure scenario"""
         logs = []
@@ -472,7 +483,7 @@ core.errors.DatabaseConnectionError
         return logs, traceback_text
 
     def _scenario_stripe_signature_error(
-        self, fmt: str, jitter: bool, prelude_count: int
+            self, fmt: str, jitter: bool, prelude_count: int
     ) -> Tuple[List[str], str]:
         """Stripe signature error scenario"""
         logs = []
@@ -501,3 +512,7 @@ stripe.error.SignatureVerificationError: Invalid signature
         logs.append(traceback_text)
 
         return logs, traceback_text
+
+
+if __name__ == "__main__":
+    SimulationService()._scenario_paystack_timeout()

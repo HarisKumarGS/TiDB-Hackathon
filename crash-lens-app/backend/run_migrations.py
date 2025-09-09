@@ -27,7 +27,7 @@ def check_database_connection():
         # Convert to sync URL for connection check
         sync_url = database_url.replace("+asyncpg", "")
         engine = create_engine(sync_url)
-        
+
         with engine.connect() as conn:
             result = conn.execute(text("SELECT 1"))
             print("✅ Database connection successful")
@@ -46,18 +46,18 @@ def run_migrations():
     try:
         # Get the alembic config
         alembic_cfg = Config("alembic.ini")
-        
+
         # Check current migration status
         print("📊 Checking current migration status...")
         command.current(alembic_cfg)
-        
+
         # Run migrations
         print("🚀 Running migrations...")
         command.upgrade(alembic_cfg, "head")
-        
+
         print("✅ Migrations completed successfully!")
         return True
-        
+
     except Exception as e:
         print(f"❌ Migration failed: {e}")
         return False
@@ -77,10 +77,10 @@ def main():
     """Main function."""
     print("🔧 Crash Lens Database Migration Tool")
     print("=" * 40)
-    
+
     if len(sys.argv) > 1:
         command_arg = sys.argv[1].lower()
-        
+
         if command_arg == "check":
             check_database_connection()
         elif command_arg == "history":

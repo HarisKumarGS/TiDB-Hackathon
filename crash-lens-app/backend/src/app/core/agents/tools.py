@@ -23,18 +23,26 @@ def get_data_from_embeddings(
     query: Annotated[str, "query for vector db"],
     top_K: Annotated[int, "No of nodes needs to be retried"] = 5,
 ) -> list[QueryResult]:
-    """Retrieves the AST semantic nodes (abstract syntax tree–based code representations enriched with semantic metadata)
+    """
+    Retrieves the AST semantic nodes (abstract syntax tree–based code representations enriched with semantic metadata)
     of the project’s codebase from the vector database. This allows the agent to access relevant code structure, symbols,
-    and relationships for tasks like debugging, refactoring, or answering stack-trace–related queries"""
+    and relationships for tasks like debugging, refactoring, or answering stack-trace–related queries
+
+    Search the indexed codebase (AST nodes with semantics).
+
+    Generate human-like queries that capture the error, methods, classes, or stack trace context.
+
+    Dynamically ask for more data if initial results are insufficient.
+
+    Adjust the number of results (k) as needed to cover all relevant nodes.
+
+    Always cross-verify results: only conclude root cause when multiple sources or nodes consistently point to the same issue.
+    """
     query_embedding = voyager.embed(
         texts=[query], model="voyage-code-3", input_type="query"
     ).embeddings[0]
     relevant_files = vector_client.query(query_vector=query_embedding, k=top_K)
     return relevant_files
-
-
-if __name__ == "__main__":
-    print(get_data_from_embeddings.invoke({"query": "is redis used in the project"}))
 
 
 @tool
@@ -50,3 +58,48 @@ def get_file_content_from_path(
             return f"error reading file: {e}"
     else:
         return "file not found"
+
+
+@tool
+def save_rca_to_db(
+    crash_id: Annotated[str, "The Id of the crash given"],
+    description: Annotated[str, "High-level description of the crash incident."],
+    problem_identification: Annotated[
+        str,
+        "Details about how the crash was identified, including symptoms and triggers.",
+    ],
+    data_collection: Annotated[
+        str,
+        "Information or evidence collected during the investigation (logs, traces, metrics).",
+    ],
+    root_cause_identification: Annotated[
+        str,
+        "The underlying root cause of the crash (e.g., null pointer dereference, race condition).",
+    ],
+    solution: Annotated[
+        str,
+        "Proposed or implemented solution to resolve the issue and prevent recurrence.",
+    ],
+    supporting_documents: Annotated[
+        list[str], "List of strings of supporting document references if any ."
+    ],
+):
+    """
+    Save a Root Cause Analysis (RCA) record into the database.
+
+    This tool should be used when RCA workflow is completed
+     for a crash and needs to persist the findings.
+    """
+    print("Saving RCA to DB")
+    # todo: save to db
+    print(
+        f"{crash_id}, {description}, {problem_identification}, {data_collection}, {root_cause_identification} {supporting_documents} {solution}"
+    )
+
+
+@tool
+def save_diff_to_db(diff: Annotated[str, "git diff of the changes"]):
+    """Save the git diff of the changes to fix the crash to db"""
+    # todo: save diff to db
+    print("Saving diff to DB")
+    print(diff)

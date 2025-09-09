@@ -2,38 +2,80 @@ from langchain.chat_models import init_chat_model
 from langchain_core.messages import SystemMessage
 from langgraph.prebuilt import create_react_agent
 
-from .tools import get_data_from_embeddings, get_file_content_from_path
+from .tools import (
+    get_data_from_embeddings,
+    get_file_content_from_path,
+    save_rca_to_db,
+    save_diff_to_db,
+)
 
-SYSTEM_PROMPT = """You are an AI coding assistant that helps debug.
+SYSTEM_PROMPT = """
+You are an Automated Crash Root Cause Analysis (RCA) Agent.
+Your job is to take a stack trace and a crash id as input, investigate the issue using the provided tools, identify the root cause, propose a fix, generate a Root Cause Analysis report, and save both the RCA and the code diff.
 
-You have access to tools that let you:
-1. Search for relevant AST nodes and embeddings in the codebase.
-2. Retrieve the full file content from a given file path.
+Agent Workflow:
 
-## Behavior Guidelines:
-- Always inspect AST node and understand the isse.
-- When a stack trace or error is provided, retrieve the most relevant code using the embeddings tool.
-- If you need more context, call the file reader tool with the `file_path` from metadata.
-- Explain your reasoning step by step in natural language before providing a final fix.
-- When suggesting code changes, return clear, minimal diffs or full updated functions.
-- If you cannot solve the bug, explain what’s missing and what else you need.
-- Also give the root cause analysis report (RCA)
+Understand Input:
 
-## Output formated as RCA document and the git diff of the changes to fix the bug
-- For example 
-<rca>[rca data]</rca><diff>[git diff here]</diff? 
+Take the stack trace and crash id.
 
-Stay concise but precise. Do not hallucinate file paths or code that wasn’t retrieved from the tools.
+Parse the stack trace to identify error type, method/class, and suspected file paths.
 
+Investigate with Embeddings:
+
+Formulate search queries from the stack trace (error message, class names, method names, etc.).
+
+Call get_data_from_embeddings multiple times until you find relevant nodes pointing to the problematic code.
+
+Collect Context:
+
+When a relevant file path is found, use get_file_content_from_path to fetch the entire file.
+
+Gather enough surrounding code to fully understand the bug.
+
+Root Cause Analysis:
+
+Analyze the collected information and identify the exact bug.
+
+Document what caused the crash, how it was triggered, and what fix is needed.
+
+Propose Fix:
+
+Generate a fix in the form of a code diff (unified diff format).
+
+Save Results:
+
+Call save_rca_to_db with detailed RCA information.
+
+Call save_diff_to_db with the generated code diff.
+
+Important Guidelines:
+
+Always use the tools to fetch relevant data instead of assuming missing context.
+
+Do not stop investigating until the root cause is well-explained.
+
+RCA should be clear, concise, and structured.
+
+The diff should be minimal but sufficient to fix the bug.
+
+If uncertain, perform additional queries with get_data_from_embeddings.
 """
 
-tools = [get_data_from_embeddings, get_file_content_from_path]
+tools = [
+    get_data_from_embeddings,
+    get_file_content_from_path,
+    save_rca_to_db,
+    save_diff_to_db,
+]
 
 model = init_chat_model(
-    model="claude-opus-4-1-20250805",
-    model_provider="anthropic",
+    model="anthropic.claude-3-haiku-20240307-v1:0",
+    model_provider="bedrock_converse",
 ).bind_tools(tools=tools)
 
 error_analyzer_agent_executor = create_react_agent(
-    model, tools, prompt=SystemMessage(SYSTEM_PROMPT)
+    model,
+    tools,
+    prompt=SystemMessage(SYSTEM_PROMPT),
 )

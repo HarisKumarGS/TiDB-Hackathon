@@ -9,23 +9,27 @@ from ..core.database import Base
 
 class Repository(Base):
     """Repository SQLAlchemy model"""
+
     __tablename__ = "repository"
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String(255), nullable=False)
     url = Column(String(500), nullable=False)
     description = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
     # Relationship
     crashes = relationship("Crash", back_populates="repository")
 
 
 class Crash(Base):
     """Crash SQLAlchemy model"""
+
     __tablename__ = "crash"
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     component = Column(String(255), nullable=False)
     error_type = Column(String(255), nullable=False)
@@ -36,8 +40,10 @@ class Crash(Base):
     repository_id = Column(String, ForeignKey("repository.id"), nullable=False)
     error_log = Column(String(500))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
     # Relationships
     repository = relationship("Repository", back_populates="crashes")
     rca = relationship("CrashRCA", back_populates="crash", uselist=False)
@@ -45,8 +51,9 @@ class Crash(Base):
 
 class CrashRCA(Base):
     """Crash RCA SQLAlchemy model"""
+
     __tablename__ = "crash_rca"
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     crash_id = Column(String, ForeignKey("crash.id"), nullable=False)
     description = Column(Text)
@@ -58,7 +65,9 @@ class CrashRCA(Base):
     author = Column(ARRAY(String))
     supporting_documents = Column(ARRAY(String))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
     # Relationship
     crash = relationship("Crash", back_populates="rca")
