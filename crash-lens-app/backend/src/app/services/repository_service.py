@@ -7,7 +7,7 @@ from sqlalchemy import text, select
 
 from ..core.code_indexer import CodeIndexer
 from ..models.model import Repository
-from ..schema.repository import RepositoryCreate, RepositoryUpdate, Crash, CrashUpdate
+from ..schema.repository import RepositoryCreate, RepositoryUpdate, Crash, CrashUpdate, CrashRCA
 from ..utils.datetime_utils import get_utc_now_naive
 
 
@@ -210,6 +210,39 @@ class RepositoryService:
         )
         result = await self.db.execute(query, {"repository_id": repository_id})
         return result.scalar() or 0
+
+    async def get_crash_rca(self, crash_id: str) -> Optional[CrashRCA]:
+        """Get RCA document by crash ID"""
+        query = text(
+            """
+            SELECT id, crash_id, description, problem_identification, data_collection,
+                   analysis, root_cause_identification, solution, author, supporting_documents,
+                   created_at, updated_at
+            FROM crash_rca
+            WHERE crash_id = :crash_id
+            """
+        )
+
+        result = await self.db.execute(query, {"crash_id": crash_id})
+        row = result.fetchone()
+
+        if not row:
+            return None
+
+        return CrashRCA(
+            id=row.id,
+            crash_id=row.crash_id,
+            description=row.description,
+            problem_identification=row.problem_identification,
+            data_collection=row.data_collection,
+            analysis=row.analysis,
+            root_cause_identification=row.root_cause_identification,
+            solution=row.solution,
+            author=row.author,
+            supporting_documents=row.supporting_documents,
+            created_at=row.created_at or get_utc_now_naive(),
+            updated_at=row.updated_at or get_utc_now_naive(),
+        )
 
     async def get_crash(self, crash_id: str) -> Optional[Crash]:
         """Get a crash by ID"""

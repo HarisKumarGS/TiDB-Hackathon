@@ -1,9 +1,10 @@
 [project]
 name = "backend"
 version = "0.1.0"
-description = "Add your description here"
+description = "Crash Lens FastAPI backend"
 readme = "README.md"
-requires-python = ">=3.9"
+packages = [{ include = "src" }]
+
 dependencies = [
     "fastapi>=0.104.0",
     "pydantic>=2.0.0",
@@ -28,3 +29,14 @@ dependencies = [
     "greenlet>=3.2.4",
     "langchain-aws>=0.2.31",
 ]
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = ">=0.12.11"
+
+[tool.poetry.scripts]
+start = "uvicorn:main"
+
+[build-system]
+requires = ["poetry-core>=1.9.0"]
+build-backend = "poetry.core.masonry.api"
