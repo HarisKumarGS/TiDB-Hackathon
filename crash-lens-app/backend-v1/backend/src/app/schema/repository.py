@@ -66,7 +66,7 @@ class Crash(BaseModel):
         None, max_length=500, description="Additional comments"
     )
     error_log: Optional[str] = Field(
-        None, max_length=500, description="URL to error log file"
+        None, description="URL to error log file"
     )
     created_at: Optional[datetime] = Field(None, description="Creation timestamp")
     updated_at: Optional[datetime] = Field(None, description="Last update timestamp")

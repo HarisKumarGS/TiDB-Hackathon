@@ -1,15 +1,7 @@
 from fastapi import APIRouter
-from ..services.s3_service import S3Service
 from ..services.slack_service import SlackService
 
 router = APIRouter()
-
-
-@router.get("/s3-status")
-async def get_s3_status():
-    """Get S3 service status and configuration"""
-    s3_service = S3Service()
-    return s3_service.get_bucket_info()
 
 
 @router.get("/slack-status")

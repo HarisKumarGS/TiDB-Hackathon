@@ -67,8 +67,6 @@ class SimulateCrashResponse(BaseModel):
     error_details: ErrorDetails
     users_impacted: int
     logs_generated: int
-    log_file_url: Optional[str] = None
-    s3_key: Optional[str] = None
     sample_link: str
     slack_notification_sent: bool = False
     database_entry_created: bool = False

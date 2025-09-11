@@ -14,8 +14,8 @@ from ..schema.simulation import (
     SimulateCrashResponse,
     ErrorDetails,
 )
-from .s3_service import S3Service
 from .slack_service import SlackService
+from .s3_service import S3Service
 from ..utils.datetime_utils import get_utc_now_naive
 
 
@@ -24,8 +24,8 @@ class SimulationService:
 
     def __init__(self, db_session: Session):
         self.db = db_session
-        self.s3_service = S3Service()
         self.slack_service = SlackService()
+        self.s3_service = S3Service()
 
     def _trigger_agent(self, crash_content):
         error_analyzer_agent_executor.invoke({"messages": [{"role": "user", "content": crash_content}]})
@@ -67,20 +67,22 @@ class SimulationService:
         # Generate sample link
         sample_link = f"https://monitoring.example.com/errors/{request.scenario.value}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-        # Upload logs to S3
-        log_file_url, s3_key, s3_success = self.s3_service.upload_logs_to_s3(
-            scenario=request.scenario.value, logs=logs, crash_id=crash_id
+        # Upload logs to S3 and get URL
+        s3_url, s3_key, s3_success = self.s3_service.upload_logs_to_s3(
+            scenario=request.scenario.value,
+            logs=logs,
+            crash_id=crash_id
         )
 
-        # Update crash entry with error log URL
-        error_log_updated = self._update_crash_error_log(crash_id, log_file_url)
+        # Store S3 URL in database instead of log content
+        error_log_updated = self._update_crash_error_log(crash_id, s3_url)
 
         background_tasks.add_task(self._trigger_agent, f"{traceback_text}\n crash id: {crash_id}")
 
-        # Send Slack notification
+        # Send Slack notification with real S3 URL
         slack_notification_sent = self.slack_service.send_crash_notification(
             error_details=error_details,
-            s3_url=log_file_url,
+            s3_url=s3_url,
             s3_key=s3_key,
             users_impacted=users_impacted,
             sample_link=sample_link,
@@ -94,12 +96,10 @@ class SimulationService:
             error_details=ErrorDetails(**error_details),
             users_impacted=users_impacted,
             logs_generated=len(logs),
-            log_file_url=log_file_url,
-            s3_key=s3_key,
             sample_link=sample_link,
             slack_notification_sent=slack_notification_sent,
             database_entry_created=database_success,
-            message=f"Crash simulation '{request.scenario.value}' completed successfully. Error log URL updated in database: {error_log_updated}",
+            message=f"Crash simulation '{request.scenario.value}' completed successfully. Error log uploaded to S3: {s3_success}, URL stored in database: {error_log_updated}",
         )
 
     def _run_scenario(
@@ -217,7 +217,7 @@ class SimulationService:
                     "impacted_users": users_impacted,
                     "comment": request.comment,
                     "repository_id": request.repository_id,
-                    "error_log": None,  # Will be updated after S3 upload
+                    "error_log": None,  # Will be updated with log content
                     "created_at": now,
                     "updated_at": now,
                 },
@@ -279,8 +279,8 @@ class SimulationService:
             self.db.rollback()
             return False
 
-    def _update_crash_error_log(self, crash_id: str, error_log_url: str) -> bool:
-        """Update crash entry with error log URL"""
+    def _update_crash_error_log(self, crash_id: str, error_log_content: str) -> bool:
+        """Update crash entry with error log content"""
         try:
             now = get_utc_now_naive()
             query = text("""
@@ -291,15 +291,15 @@ class SimulationService:
                          """)
 
             self.db.execute(
-                query, {"id": crash_id, "error_log": error_log_url, "updated_at": now}
+                query, {"id": crash_id, "error_log": error_log_content, "updated_at": now}
             )
 
             self.db.commit()
-            print(f"✅ Updated crash {crash_id} with error log URL: {error_log_url}")
+            print(f"✅ Updated crash {crash_id} with error log content")
             return True
 
         except Exception as e:
-            print(f"Error updating crash entry with error log URL: {e}")
+            print(f"Error updating crash entry with error log content: {e}")
             self.db.rollback()
             return False
 

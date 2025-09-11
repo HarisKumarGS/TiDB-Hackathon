@@ -28,14 +28,14 @@ class RepositoryService:
         repository_id = str(uuid.uuid4())
         now = get_utc_now_naive()
 
-        query = text("""
+        # TiDB compatible: Split INSERT and SELECT instead of using RETURNING
+        insert_query = text("""
             INSERT INTO repository (id, name, url, created_at, updated_at)
             VALUES (:id, :name, :url, :created_at, :updated_at)
-            RETURNING id, name, url, created_at, updated_at
         """)
 
-        result = self.db.execute(
-            query,
+        self.db.execute(
+            insert_query,
             {
                 "id": repository_id,
                 "name": repository_data.name,
@@ -46,6 +46,15 @@ class RepositoryService:
         )
 
         self.db.commit()
+
+        # Fetch the inserted record
+        select_query = text("""
+            SELECT id, name, url, created_at, updated_at
+            FROM repository
+            WHERE id = :id
+        """)
+        
+        result = self.db.execute(select_query, {"id": repository_id})
         row = result.fetchone()
 
         background_tasks.add_task(
@@ -131,15 +140,24 @@ class RepositoryService:
         if not update_fields:
             return existing  # No fields to update
 
-        query = text(f"""
+        # TiDB compatible: Split UPDATE and SELECT instead of using RETURNING
+        update_query = text(f"""
             UPDATE repository
             SET {", ".join(update_fields)}, updated_at = :updated_at
             WHERE id = :id
-            RETURNING id, name, url, created_at, updated_at
         """)
 
-        result = self.db.execute(query, params)
+        self.db.execute(update_query, params)
         self.db.commit()
+
+        # Fetch the updated record
+        select_query = text("""
+            SELECT id, name, url, created_at, updated_at
+            FROM repository
+            WHERE id = :id
+        """)
+        
+        result = self.db.execute(select_query, {"id": repository_id})
         row = result.fetchone()
 
         return Repository(
@@ -297,16 +315,25 @@ class RepositoryService:
         if not update_fields:
             return existing  # No fields to update
 
-        query = text(f"""
+        # TiDB compatible: Split UPDATE and SELECT instead of using RETURNING
+        update_query = text(f"""
             UPDATE crash
             SET {", ".join(update_fields)}, updated_at = :updated_at
             WHERE id = :id
-            RETURNING id, component, error_type, severity, status, impacted_users, 
-                     comment, error_log, repository_id, created_at, updated_at
         """)
 
-        result = self.db.execute(query, params)
+        self.db.execute(update_query, params)
         self.db.commit()
+
+        # Fetch the updated record
+        select_query = text("""
+            SELECT id, component, error_type, severity, status, impacted_users, 
+                   comment, error_log, repository_id, created_at, updated_at
+            FROM crash
+            WHERE id = :id
+        """)
+        
+        result = self.db.execute(select_query, {"id": crash_id})
         row = result.fetchone()
 
         return Crash(
@@ -327,10 +354,11 @@ class RepositoryService:
         self, search_term: str, skip: int = 0, limit: int = 100
     ) -> List[Repository]:
         """Search repositories by name or URL"""
+        # TiDB compatible: Replace ILIKE with LIKE and UPPER() for case-insensitive search
         query = text("""
             SELECT id, name, url, created_at, updated_at
             FROM repository
-            WHERE name ILIKE :search_term OR url ILIKE :search_term
+            WHERE UPPER(name) LIKE UPPER(:search_term) OR UPPER(url) LIKE UPPER(:search_term)
             ORDER BY created_at DESC
             LIMIT :limit OFFSET :skip
         """)

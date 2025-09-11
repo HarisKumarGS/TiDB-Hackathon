@@ -38,7 +38,7 @@ class Crash(Base):
     impacted_users = Column(Integer, nullable=False)
     comment = Column(String(500))
     repository_id = Column(String, ForeignKey("repository.id"), nullable=False)
-    error_log = Column(String(500))
+    error_log = Column(String())
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

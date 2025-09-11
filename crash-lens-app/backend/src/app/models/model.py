@@ -28,7 +28,7 @@ class Crash(BaseModel):
     comment: Optional[str] = Field(None, max_length=500)
     repository_id: str
     error_log: Optional[str] = Field(
-        None, max_length=500, description="URL to the error log file"
+        None, description="Error log content stored as longtext"
     )
     created_at: Optional[datetime] = Field(None, description="Creation timestamp")
     updated_at: Optional[datetime] = Field(None, description="Last update timestamp")

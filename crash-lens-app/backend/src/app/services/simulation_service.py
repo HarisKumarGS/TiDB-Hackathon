@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List, Tuple, Optional
 
 from fastapi import BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from src.app.core import error_analyzer_agent_executor
@@ -14,7 +14,6 @@ from ..schema.simulation import (
     SimulateCrashResponse,
     ErrorDetails,
 )
-from .s3_service import S3Service
 from .slack_service import SlackService
 from ..utils.datetime_utils import get_utc_now_naive
 
@@ -22,16 +21,15 @@ from ..utils.datetime_utils import get_utc_now_naive
 class SimulationService:
     """Service for crash simulation and log generation"""
 
-    def __init__(self, db_session: AsyncSession):
+    def __init__(self, db_session: Session):
         self.db = db_session
-        self.s3_service = S3Service()
         self.slack_service = SlackService()
 
     def _trigger_agent(self, crash_content):
         error_analyzer_agent_executor.invoke({"messages": [{"role": "user", "content": crash_content}]})
         print("Agent completed the task")
 
-    async def simulate_crash(
+    def simulate_crash(
             self, request: SimulateCrashRequest,
             background_tasks: BackgroundTasks,
     ) -> SimulateCrashResponse:
@@ -41,7 +39,7 @@ class SimulationService:
         crash_id = str(uuid.uuid4())
 
         # Run the simulation scenario
-        logs, traceback_text = await self._run_scenario(
+        logs, traceback_text = self._run_scenario(
             request.scenario.value,
             request.format.value,
             request.min_logs,
@@ -57,7 +55,7 @@ class SimulationService:
         users_impacted = request.users_impacted or random.randint(50, 5000)
 
         # Create database entry
-        database_success = await self._create_crash_entry(
+        database_success = self._create_crash_entry(
             crash_id=crash_id,
             request=request,
             error_details=error_details,
@@ -67,21 +65,15 @@ class SimulationService:
         # Generate sample link
         sample_link = f"https://monitoring.example.com/errors/{request.scenario.value}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-        # Upload logs to S3
-        log_file_url, s3_key, s3_success = self.s3_service.upload_logs_to_s3(
-            scenario=request.scenario.value, logs=logs, crash_id=crash_id
-        )
-
-        # Update crash entry with error log URL
-        error_log_updated = await self._update_crash_error_log(crash_id, log_file_url)
+        # Store logs directly in database
+        logs_content = "\n".join(logs)
+        error_log_updated = self._update_crash_error_log(crash_id, logs_content)
 
         background_tasks.add_task(self._trigger_agent, f"{traceback_text}\n crash id: {crash_id}")
 
         # Send Slack notification
         slack_notification_sent = self.slack_service.send_crash_notification(
             error_details=error_details,
-            s3_url=log_file_url,
-            s3_key=s3_key,
             users_impacted=users_impacted,
             sample_link=sample_link,
             crash_id=crash_id,
@@ -94,15 +86,13 @@ class SimulationService:
             error_details=ErrorDetails(**error_details),
             users_impacted=users_impacted,
             logs_generated=len(logs),
-            log_file_url=log_file_url,
-            s3_key=s3_key,
             sample_link=sample_link,
             slack_notification_sent=slack_notification_sent,
             database_entry_created=database_success,
-            message=f"Crash simulation '{request.scenario.value}' completed successfully. Error log URL updated in database: {error_log_updated}",
+            message=f"Crash simulation '{request.scenario.value}' completed successfully. Error log stored in database: {error_log_updated}",
         )
 
-    async def _run_scenario(
+    def _run_scenario(
             self, scenario: str, fmt: str, prelude_count: int, jitter: bool
     ) -> Tuple[List[str], str]:
         """Run the specified crash scenario and return logs and traceback"""
@@ -188,7 +178,7 @@ class SimulationService:
 
         return error_details
 
-    async def _create_crash_entry(
+    def _create_crash_entry(
             self,
             crash_id: str,
             request: SimulateCrashRequest,
@@ -206,7 +196,7 @@ class SimulationService:
                                  :repository_id, :error_log, :created_at, :updated_at)
                          """)
 
-            await self.db.execute(
+            self.db.execute(
                 query,
                 {
                     "id": crash_id,
@@ -217,16 +207,16 @@ class SimulationService:
                     "impacted_users": users_impacted,
                     "comment": request.comment,
                     "repository_id": request.repository_id,
-                    "error_log": None,  # Will be updated after S3 upload
+                    "error_log": None,  # Will be updated with log content
                     "created_at": now,
                     "updated_at": now,
                 },
             )
 
-            await self.db.commit()
+            self.db.commit()
 
             # Create RCA record for the crash
-            rca_success = await self._create_crash_rca(crash_id)
+            rca_success = self._create_crash_rca(crash_id)
             if not rca_success:
                 print(f"Warning: Failed to create RCA record for crash {crash_id}")
 
@@ -234,10 +224,10 @@ class SimulationService:
 
         except Exception as e:
             print(f"Error creating crash entry: {e}")
-            await self.db.rollback()
+            self.db.rollback()
             return False
 
-    async def _create_crash_rca(self, crash_id: str) -> bool:
+    def _create_crash_rca(self, crash_id: str) -> bool:
         """Create RCA record for a crash"""
         try:
             rca_id = str(uuid.uuid4())
@@ -252,7 +242,7 @@ class SimulationService:
                                  :solution, :author, :supporting_documents, :created_at, :updated_at)
                          """)
 
-            await self.db.execute(
+            self.db.execute(
                 query,
                 {
                     "id": rca_id,
@@ -270,17 +260,17 @@ class SimulationService:
                 },
             )
 
-            await self.db.commit()
+            self.db.commit()
             print(f"✅ Created RCA record {rca_id} for crash {crash_id}")
             return True
 
         except Exception as e:
             print(f"Error creating RCA record: {e}")
-            await self.db.rollback()
+            self.db.rollback()
             return False
 
-    async def _update_crash_error_log(self, crash_id: str, error_log_url: str) -> bool:
-        """Update crash entry with error log URL"""
+    def _update_crash_error_log(self, crash_id: str, error_log_content: str) -> bool:
+        """Update crash entry with error log content"""
         try:
             now = get_utc_now_naive()
             query = text("""
@@ -290,17 +280,17 @@ class SimulationService:
                          WHERE id = :id
                          """)
 
-            await self.db.execute(
-                query, {"id": crash_id, "error_log": error_log_url, "updated_at": now}
+            self.db.execute(
+                query, {"id": crash_id, "error_log": error_log_content, "updated_at": now}
             )
 
-            await self.db.commit()
-            print(f"✅ Updated crash {crash_id} with error log URL: {error_log_url}")
+            self.db.commit()
+            print(f"✅ Updated crash {crash_id} with error log content")
             return True
 
         except Exception as e:
-            print(f"Error updating crash entry with error log URL: {e}")
-            await self.db.rollback()
+            print(f"Error updating crash entry with error log content: {e}")
+            self.db.rollback()
             return False
 
     def _now_iso(self) -> str:
