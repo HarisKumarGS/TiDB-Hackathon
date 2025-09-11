@@ -1,5 +1,4 @@
-from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey, ARRAY
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
@@ -62,8 +61,8 @@ class CrashRCA(Base):
     analysis = Column(Text)
     root_cause_identification = Column(Text)
     solution = Column(Text)
-    author = Column(ARRAY(String))
-    supporting_documents = Column(ARRAY(String))
+    author = Column(JSON)
+    supporting_documents = Column(JSON)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

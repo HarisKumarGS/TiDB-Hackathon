@@ -2,7 +2,7 @@ import uuid
 from typing import List, Optional
 
 from fastapi import BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy import text, select
 
 from ..core.code_indexer import CodeIndexer
@@ -14,28 +14,28 @@ from ..utils.datetime_utils import get_utc_now_naive
 class RepositoryService:
     """Service for repository management operations"""
 
-    def __init__(self, db_session: AsyncSession):
+    def __init__(self, db_session: Session):
         self.db = db_session
 
     def _index_repository(self, id: str, url: str):
         indexer = CodeIndexer(id, url)
         indexer.index()
 
-    async def create_repository(
+    def create_repository(
         self, repository_data: RepositoryCreate, background_tasks: BackgroundTasks
     ) -> Repository:
         """Create a new repository"""
         repository_id = str(uuid.uuid4())
         now = get_utc_now_naive()
 
-        query = text("""
+        # TiDB compatible: Split INSERT and SELECT instead of using RETURNING
+        insert_query = text("""
             INSERT INTO repository (id, name, url, created_at, updated_at)
             VALUES (:id, :name, :url, :created_at, :updated_at)
-            RETURNING id, name, url, created_at, updated_at
         """)
 
-        result = await self.db.execute(
-            query,
+        self.db.execute(
+            insert_query,
             {
                 "id": repository_id,
                 "name": repository_data.name,
@@ -45,7 +45,16 @@ class RepositoryService:
             },
         )
 
-        await self.db.commit()
+        self.db.commit()
+
+        # Fetch the inserted record
+        select_query = text("""
+            SELECT id, name, url, created_at, updated_at
+            FROM repository
+            WHERE id = :id
+        """)
+        
+        result = self.db.execute(select_query, {"id": repository_id})
         row = result.fetchone()
 
         background_tasks.add_task(
@@ -60,7 +69,7 @@ class RepositoryService:
             updated_at=row.updated_at or get_utc_now_naive(),
         )
 
-    async def get_repository(self, repository_id: str) -> Optional[Repository]:
+    def get_repository(self, repository_id: str) -> Optional[Repository]:
         """Get a repository by ID"""
         query = text("""
             SELECT id, name, url, created_at, updated_at
@@ -68,7 +77,7 @@ class RepositoryService:
             WHERE id = :id
         """)
 
-        result = await self.db.execute(query, {"id": repository_id})
+        result = self.db.execute(query, {"id": repository_id})
         row = result.fetchone()
 
         if not row:
@@ -82,7 +91,7 @@ class RepositoryService:
             updated_at=row.updated_at or get_utc_now_naive(),
         )
 
-    async def get_repositories(
+    def get_repositories(
         self, skip: int = 0, limit: int = 100
     ) -> List[Repository]:
         """Get all repositories with pagination"""
@@ -93,7 +102,7 @@ class RepositoryService:
             LIMIT :limit OFFSET :skip
         """)
 
-        result = await self.db.execute(query, {"skip": skip, "limit": limit})
+        result = self.db.execute(query, {"skip": skip, "limit": limit})
         rows = result.fetchall()
 
         return [
@@ -107,12 +116,12 @@ class RepositoryService:
             for row in rows
         ]
 
-    async def update_repository(
+    def update_repository(
         self, repository_id: str, update_data: RepositoryUpdate
     ) -> Optional[Repository]:
         """Update a repository"""
         # First check if repository exists
-        existing = await self.get_repository(repository_id)
+        existing = self.get_repository(repository_id)
         if not existing:
             return None
 
@@ -131,15 +140,24 @@ class RepositoryService:
         if not update_fields:
             return existing  # No fields to update
 
-        query = text(f"""
+        # TiDB compatible: Split UPDATE and SELECT instead of using RETURNING
+        update_query = text(f"""
             UPDATE repository
             SET {", ".join(update_fields)}, updated_at = :updated_at
             WHERE id = :id
-            RETURNING id, name, url, created_at, updated_at
         """)
 
-        result = await self.db.execute(query, params)
-        await self.db.commit()
+        self.db.execute(update_query, params)
+        self.db.commit()
+
+        # Fetch the updated record
+        select_query = text("""
+            SELECT id, name, url, created_at, updated_at
+            FROM repository
+            WHERE id = :id
+        """)
+        
+        result = self.db.execute(select_query, {"id": repository_id})
         row = result.fetchone()
 
         return Repository(
@@ -150,26 +168,26 @@ class RepositoryService:
             updated_at=row.updated_at or get_utc_now_naive(),
         )
 
-    async def delete_repository(self, repository_id: str) -> bool:
+    def delete_repository(self, repository_id: str) -> bool:
         """Delete a repository"""
         # First check if repository exists
-        existing = await self.get_repository(repository_id)
+        existing = self.get_repository(repository_id)
         if not existing:
             return False
 
         query = text("DELETE FROM repository WHERE id = :id")
-        await self.db.execute(query, {"id": repository_id})
-        await self.db.commit()
+        self.db.execute(query, {"id": repository_id})
+        self.db.commit()
 
         return True
 
-    async def get_repository_count(self) -> int:
+    def get_repository_count(self) -> int:
         """Get total count of repositories"""
         query = text("SELECT COUNT(*) as count FROM repository")
-        result = await self.db.execute(query)
+        result = self.db.execute(query)
         return result.scalar() or 0
 
-    async def get_repository_crashes(
+    def get_repository_crashes(
         self, repository_id: str, skip: int = 0, limit: int = 100
     ) -> List[Crash]:
         """Get all crashes for a specific repository with pagination"""
@@ -182,7 +200,7 @@ class RepositoryService:
             LIMIT :limit OFFSET :skip
         """)
 
-        result = await self.db.execute(
+        result = self.db.execute(
             query, {"repository_id": repository_id, "skip": skip, "limit": limit}
         )
         rows = result.fetchall()
@@ -203,15 +221,15 @@ class RepositoryService:
             for row in rows
         ]
 
-    async def get_repository_crash_count(self, repository_id: str) -> int:
+    def get_repository_crash_count(self, repository_id: str) -> int:
         """Get total count of crashes for a specific repository"""
         query = text(
             "SELECT COUNT(*) as count FROM crash WHERE repository_id = :repository_id"
         )
-        result = await self.db.execute(query, {"repository_id": repository_id})
+        result = self.db.execute(query, {"repository_id": repository_id})
         return result.scalar() or 0
 
-    async def get_crash_rca(self, crash_id: str) -> Optional[CrashRCA]:
+    def get_crash_rca(self, crash_id: str) -> Optional[CrashRCA]:
         """Get RCA document by crash ID"""
         query = text(
             """
@@ -223,7 +241,7 @@ class RepositoryService:
             """
         )
 
-        result = await self.db.execute(query, {"crash_id": crash_id})
+        result = self.db.execute(query, {"crash_id": crash_id})
         row = result.fetchone()
 
         if not row:
@@ -244,7 +262,7 @@ class RepositoryService:
             updated_at=row.updated_at or get_utc_now_naive(),
         )
 
-    async def get_crash(self, crash_id: str) -> Optional[Crash]:
+    def get_crash(self, crash_id: str) -> Optional[Crash]:
         """Get a crash by ID"""
         query = text("""
             SELECT id, component, error_type, severity, status, impacted_users, 
@@ -253,7 +271,7 @@ class RepositoryService:
             WHERE id = :id
         """)
 
-        result = await self.db.execute(query, {"id": crash_id})
+        result = self.db.execute(query, {"id": crash_id})
         row = result.fetchone()
 
         if not row:
@@ -273,12 +291,12 @@ class RepositoryService:
             updated_at=row.updated_at or get_utc_now_naive(),
         )
 
-    async def update_crash(
+    def update_crash(
         self, crash_id: str, update_data: CrashUpdate
     ) -> Optional[Crash]:
         """Update a crash with new status and/or comment"""
         # First check if crash exists
-        existing = await self.get_crash(crash_id)
+        existing = self.get_crash(crash_id)
         if not existing:
             return None
 
@@ -297,16 +315,25 @@ class RepositoryService:
         if not update_fields:
             return existing  # No fields to update
 
-        query = text(f"""
+        # TiDB compatible: Split UPDATE and SELECT instead of using RETURNING
+        update_query = text(f"""
             UPDATE crash
             SET {", ".join(update_fields)}, updated_at = :updated_at
             WHERE id = :id
-            RETURNING id, component, error_type, severity, status, impacted_users, 
-                     comment, error_log, repository_id, created_at, updated_at
         """)
 
-        result = await self.db.execute(query, params)
-        await self.db.commit()
+        self.db.execute(update_query, params)
+        self.db.commit()
+
+        # Fetch the updated record
+        select_query = text("""
+            SELECT id, component, error_type, severity, status, impacted_users, 
+                   comment, error_log, repository_id, created_at, updated_at
+            FROM crash
+            WHERE id = :id
+        """)
+        
+        result = self.db.execute(select_query, {"id": crash_id})
         row = result.fetchone()
 
         return Crash(
@@ -323,19 +350,20 @@ class RepositoryService:
             updated_at=row.updated_at or get_utc_now_naive(),
         )
 
-    async def search_repositories(
+    def search_repositories(
         self, search_term: str, skip: int = 0, limit: int = 100
     ) -> List[Repository]:
         """Search repositories by name or URL"""
+        # TiDB compatible: Replace ILIKE with LIKE and UPPER() for case-insensitive search
         query = text("""
             SELECT id, name, url, created_at, updated_at
             FROM repository
-            WHERE name ILIKE :search_term OR url ILIKE :search_term
+            WHERE UPPER(name) LIKE UPPER(:search_term) OR UPPER(url) LIKE UPPER(:search_term)
             ORDER BY created_at DESC
             LIMIT :limit OFFSET :skip
         """)
 
-        result = await self.db.execute(
+        result = self.db.execute(
             query, {"search_term": f"%{search_term}%", "skip": skip, "limit": limit}
         )
         rows = result.fetchall()

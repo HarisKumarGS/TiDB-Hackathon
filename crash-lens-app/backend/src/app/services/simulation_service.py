@@ -15,6 +15,7 @@ from ..schema.simulation import (
     ErrorDetails,
 )
 from .slack_service import SlackService
+from .s3_service import S3Service
 from ..utils.datetime_utils import get_utc_now_naive
 
 
@@ -24,6 +25,7 @@ class SimulationService:
     def __init__(self, db_session: Session):
         self.db = db_session
         self.slack_service = SlackService()
+        self.s3_service = S3Service()
 
     def _trigger_agent(self, crash_content):
         error_analyzer_agent_executor.invoke({"messages": [{"role": "user", "content": crash_content}]})
@@ -65,15 +67,23 @@ class SimulationService:
         # Generate sample link
         sample_link = f"https://monitoring.example.com/errors/{request.scenario.value}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
-        # Store logs directly in database
-        logs_content = "\n".join(logs)
-        error_log_updated = self._update_crash_error_log(crash_id, logs_content)
+        # Upload logs to S3 and get URL
+        s3_url, s3_key, s3_success = self.s3_service.upload_logs_to_s3(
+            scenario=request.scenario.value,
+            logs=logs,
+            crash_id=crash_id
+        )
+
+        # Store S3 URL in database instead of log content
+        error_log_updated = self._update_crash_error_log(crash_id, s3_url)
 
         background_tasks.add_task(self._trigger_agent, f"{traceback_text}\n crash id: {crash_id}")
 
-        # Send Slack notification
+        # Send Slack notification with real S3 URL
         slack_notification_sent = self.slack_service.send_crash_notification(
             error_details=error_details,
+            s3_url=s3_url,
+            s3_key=s3_key,
             users_impacted=users_impacted,
             sample_link=sample_link,
             crash_id=crash_id,
@@ -89,7 +99,7 @@ class SimulationService:
             sample_link=sample_link,
             slack_notification_sent=slack_notification_sent,
             database_entry_created=database_success,
-            message=f"Crash simulation '{request.scenario.value}' completed successfully. Error log stored in database: {error_log_updated}",
+            message=f"Crash simulation '{request.scenario.value}' completed successfully. Error log uploaded to S3: {s3_success}, URL stored in database: {error_log_updated}",
         )
 
     def _run_scenario(

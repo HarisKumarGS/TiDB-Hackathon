@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..services.repository_service import RepositoryService
 from ..schema.repository import (
@@ -19,10 +19,10 @@ router = APIRouter()
 
 
 @router.post("/repositories", response_model=RepositoryResponse)
-async def create_repository(
+def create_repository(
     repository_data: RepositoryCreate,
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """
     Create a new repository.
@@ -32,7 +32,7 @@ async def create_repository(
     """
     try:
         repository_service = RepositoryService(db)
-        repository = await repository_service.create_repository(
+        repository = repository_service.create_repository(
             repository_data, background_tasks
         )
 
@@ -46,7 +46,7 @@ async def create_repository(
 
 
 @router.get("/repositories", response_model=RepositoryListResponse)
-async def get_repositories(
+def get_repositories(
     skip: int = Query(0, ge=0, description="Number of repositories to skip"),
     limit: int = Query(
         100, ge=1, le=1000, description="Maximum number of repositories to return"
@@ -54,7 +54,7 @@ async def get_repositories(
     search: Optional[str] = Query(
         None, description="Search term for repository name or URL"
     ),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """
     Get all repositories with optional search and pagination.
@@ -67,13 +67,13 @@ async def get_repositories(
         repository_service = RepositoryService(db)
 
         if search:
-            repositories = await repository_service.search_repositories(
+            repositories = repository_service.search_repositories(
                 search, skip, limit
             )
         else:
-            repositories = await repository_service.get_repositories(skip, limit)
+            repositories = repository_service.get_repositories(skip, limit)
 
-        total = await repository_service.get_repository_count()
+        total = repository_service.get_repository_count()
 
         return RepositoryListResponse(
             success=True,
@@ -88,7 +88,7 @@ async def get_repositories(
 
 
 @router.get("/repositories/{repository_id}", response_model=RepositoryResponse)
-async def get_repository(repository_id: str, db: AsyncSession = Depends(get_db)):
+def get_repository(repository_id: str, db: Session = Depends(get_db)):
     """
     Get a specific repository by ID.
 
@@ -96,7 +96,7 @@ async def get_repository(repository_id: str, db: AsyncSession = Depends(get_db))
     """
     try:
         repository_service = RepositoryService(db)
-        repository = await repository_service.get_repository(repository_id)
+        repository = repository_service.get_repository(repository_id)
 
         if not repository:
             raise HTTPException(status_code=404, detail="Repository not found")
@@ -113,10 +113,10 @@ async def get_repository(repository_id: str, db: AsyncSession = Depends(get_db))
 
 
 @router.put("/repositories/{repository_id}", response_model=RepositoryResponse)
-async def update_repository(
+def update_repository(
     repository_id: str,
     update_data: RepositoryUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """
     Update a repository.
@@ -126,7 +126,7 @@ async def update_repository(
     """
     try:
         repository_service = RepositoryService(db)
-        repository = await repository_service.update_repository(
+        repository = repository_service.update_repository(
             repository_id, update_data
         )
 
@@ -145,7 +145,7 @@ async def update_repository(
 
 
 @router.delete("/repositories/{repository_id}", response_model=RepositoryResponse)
-async def delete_repository(repository_id: str, db: AsyncSession = Depends(get_db)):
+def delete_repository(repository_id: str, db: Session = Depends(get_db)):
     """
     Delete a repository.
 
@@ -155,7 +155,7 @@ async def delete_repository(repository_id: str, db: AsyncSession = Depends(get_d
     """
     try:
         repository_service = RepositoryService(db)
-        success = await repository_service.delete_repository(repository_id)
+        success = repository_service.delete_repository(repository_id)
 
         if not success:
             raise HTTPException(status_code=404, detail="Repository not found")
@@ -174,13 +174,13 @@ async def delete_repository(repository_id: str, db: AsyncSession = Depends(get_d
 @router.get(
     "/repositories/{repository_id}/crashes", response_model=RepositoryCrashesResponse
 )
-async def get_repository_crashes(
+def get_repository_crashes(
     repository_id: str,
     skip: int = Query(0, ge=0, description="Number of crashes to skip"),
     limit: int = Query(
         100, ge=1, le=1000, description="Maximum number of crashes to return"
     ),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
 ):
     """
     Get all crashes for a specific repository.
@@ -193,15 +193,15 @@ async def get_repository_crashes(
         repository_service = RepositoryService(db)
 
         # First check if repository exists
-        repository = await repository_service.get_repository(repository_id)
+        repository = repository_service.get_repository(repository_id)
         if not repository:
             raise HTTPException(status_code=404, detail="Repository not found")
 
         # Get crashes for the repository
-        crashes = await repository_service.get_repository_crashes(
+        crashes = repository_service.get_repository_crashes(
             repository_id, skip, limit
         )
-        total = await repository_service.get_repository_crash_count(repository_id)
+        total = repository_service.get_repository_crash_count(repository_id)
 
         return RepositoryCrashesResponse(
             success=True,
@@ -218,8 +218,8 @@ async def get_repository_crashes(
 
 
 @router.put("/crashes/{crash_id}", response_model=CrashResponse)
-async def update_crash(
-    crash_id: str, update_data: CrashUpdate, db: AsyncSession = Depends(get_db)
+def update_crash(
+    crash_id: str, update_data: CrashUpdate, db: Session = Depends(get_db)
 ):
     """
     Update a crash record with new status and/or comment.
@@ -229,7 +229,7 @@ async def update_crash(
     """
     try:
         repository_service = RepositoryService(db)
-        updated_crash = await repository_service.update_crash(crash_id, update_data)
+        updated_crash = repository_service.update_crash(crash_id, update_data)
 
         if not updated_crash:
             raise HTTPException(status_code=404, detail="Crash not found")
@@ -244,7 +244,7 @@ async def update_crash(
 
 
 @router.get("/crashes/{crash_id}/rca", response_model=CrashRCAResponse)
-async def get_crash_rca(crash_id: str, db: AsyncSession = Depends(get_db)):
+def get_crash_rca(crash_id: str, db: Session = Depends(get_db)):
     """
     Get the RCA document associated with a crash.
 
@@ -254,12 +254,12 @@ async def get_crash_rca(crash_id: str, db: AsyncSession = Depends(get_db)):
         repository_service = RepositoryService(db)
 
         # Ensure crash exists
-        crash = await repository_service.get_crash(crash_id)
+        crash = repository_service.get_crash(crash_id)
         if not crash:
             raise HTTPException(status_code=404, detail="Crash not found")
 
         # Fetch RCA
-        rca = await repository_service.get_crash_rca(crash_id)
+        rca = repository_service.get_crash_rca(crash_id)
         if not rca:
             return CrashRCAResponse(
                 success=True,

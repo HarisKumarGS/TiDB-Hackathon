@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from ..services.insights_service import InsightsService
 from ..services.repository_service import RepositoryService
 from ..schema.insights import InsightsResponse
@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.get("/insights/{repository_id}", response_model=InsightsResponse)
-async def get_insights(repository_id: str, db: AsyncSession = Depends(get_db)):
+def get_insights(repository_id: str, db: Session = Depends(get_db)):
     """
     Get comprehensive insights about crashes and issues for a specific repository.
 
@@ -26,12 +26,12 @@ async def get_insights(repository_id: str, db: AsyncSession = Depends(get_db)):
     try:
         # First check if repository exists
         repository_service = RepositoryService(db)
-        repository = await repository_service.get_repository(repository_id)
+        repository = repository_service.get_repository(repository_id)
         if not repository:
             raise HTTPException(status_code=404, detail="Repository not found")
 
         insights_service = InsightsService(db)
-        insights = await insights_service.get_insights(repository_id)
+        insights = insights_service.get_insights(repository_id)
         return insights
     except HTTPException:
         raise

@@ -29,6 +29,8 @@ class SlackService:
     def send_crash_notification(
         self,
         error_details: Dict[str, Any],
+        s3_url: str,
+        s3_key: str,
         users_impacted: int,
         sample_link: str,
         crash_id: str,
@@ -38,6 +40,8 @@ class SlackService:
 
         Args:
             error_details: Dictionary containing error information
+            s3_url: URL to the log file in S3
+            s3_key: S3 key for the log file
             users_impacted: Number of users impacted
             sample_link: Link to sample error details
             crash_id: Unique crash identifier
@@ -93,6 +97,10 @@ class SlackService:
                     {
                         "type": "section",
                         "fields": [
+                            {
+                                "type": "mrkdwn",
+                                "text": f"*Log File:*\n<{s3_url}|{s3_key.split('/')[-1]}>",
+                            },
                             {
                                 "type": "mrkdwn",
                                 "text": f"*Sample Link:*\n<{sample_link}|View Error Details>",
