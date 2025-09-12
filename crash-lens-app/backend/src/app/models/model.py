@@ -9,6 +9,7 @@ class Repository(BaseModel):
     id: str = Field(..., max_length=255)
     name: str = Field(..., max_length=255)
     url: str = Field(..., max_length=255)
+    document_url: Optional[str] = Field(None, max_length=500, description="Documentation URL")
     created_at: Optional[datetime] = Field(None, description="Creation timestamp")
     updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
 

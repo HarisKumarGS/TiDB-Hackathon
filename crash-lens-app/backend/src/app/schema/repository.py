@@ -8,6 +8,7 @@ class RepositoryBase(BaseModel):
 
     name: str = Field(..., max_length=255, description="Repository name")
     url: str = Field(..., max_length=255, description="Repository URL")
+    document_url: Optional[str] = Field(None, max_length=500, description="Documentation URL")
 
 
 class RepositoryCreate(RepositoryBase):
@@ -21,6 +22,7 @@ class RepositoryUpdate(BaseModel):
 
     name: Optional[str] = Field(None, max_length=255, description="Repository name")
     url: Optional[str] = Field(None, max_length=255, description="Repository URL")
+    document_url: Optional[str] = Field(None, max_length=500, description="Documentation URL")
 
 
 class Repository(RepositoryBase):

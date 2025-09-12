@@ -2,6 +2,7 @@ export interface Repository {
   id: string;
   name: string;
   url: string;
+  document_url?: string;
   created_at?: string;
   updated_at?: string;
   // Additional frontend-specific fields

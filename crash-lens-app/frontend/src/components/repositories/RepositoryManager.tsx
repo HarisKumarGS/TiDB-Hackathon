@@ -31,6 +31,7 @@ export function RepositoryManager({
 }: RepositoryManagerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [repoUrl, setRepoUrl] = useState('');
+  const [documentUrl, setDocumentUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -69,7 +70,8 @@ export function RepositoryManager({
       // Create repository data for API
       const repositoryData = {
         name,
-        url: repoUrl
+        url: repoUrl,
+        document_url: documentUrl.trim() || undefined
       };
 
       // Call API to add repository
@@ -84,6 +86,7 @@ export function RepositoryManager({
       });
 
       setRepoUrl('');
+      setDocumentUrl('');
       setIsOpen(false);
     } catch (error) {
       console.error('Failed to add repository:', error);
@@ -139,6 +142,17 @@ export function RepositoryManager({
               placeholder="https://github.com/owner/repository"
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
+              className="bg-secondary/50 border-border/30"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="document-url">Documents Link</Label>
+            <Input
+              id="document-url"
+              placeholder="https://docs.example.com/project (optional)"
+              value={documentUrl}
+              onChange={(e) => setDocumentUrl(e.target.value)}
               className="bg-secondary/50 border-border/30"
             />
           </div>

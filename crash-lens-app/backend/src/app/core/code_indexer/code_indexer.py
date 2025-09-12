@@ -30,6 +30,7 @@ class CodeIndexer:
                 file_path = os.path.join(root, file)
                 nodes = parser.parse_file_to_ast(file_path)
                 self.__save_embeddings(nodes)
+                # TODO
 
     def __save_embeddings(self, nodes: list[ASTSemanticNode]):
         node_to_text = [

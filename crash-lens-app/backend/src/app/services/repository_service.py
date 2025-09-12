@@ -30,8 +30,8 @@ class RepositoryService:
 
         # TiDB compatible: Split INSERT and SELECT instead of using RETURNING
         insert_query = text("""
-            INSERT INTO repository (id, name, url, created_at, updated_at)
-            VALUES (:id, :name, :url, :created_at, :updated_at)
+            INSERT INTO repository (id, name, url, document_url, created_at, updated_at)
+            VALUES (:id, :name, :url, :document_url, :created_at, :updated_at)
         """)
 
         self.db.execute(
@@ -40,6 +40,7 @@ class RepositoryService:
                 "id": repository_id,
                 "name": repository_data.name,
                 "url": repository_data.url,
+                "document_url": repository_data.document_url,
                 "created_at": now,
                 "updated_at": now,
             },
@@ -49,7 +50,7 @@ class RepositoryService:
 
         # Fetch the inserted record
         select_query = text("""
-            SELECT id, name, url, created_at, updated_at
+            SELECT id, name, url, document_url, created_at, updated_at
             FROM repository
             WHERE id = :id
         """)
@@ -65,6 +66,7 @@ class RepositoryService:
             id=row.id,
             name=row.name,
             url=row.url,
+            document_url=row.document_url,
             created_at=row.created_at or get_utc_now_naive(),
             updated_at=row.updated_at or get_utc_now_naive(),
         )
@@ -72,7 +74,7 @@ class RepositoryService:
     def get_repository(self, repository_id: str) -> Optional[Repository]:
         """Get a repository by ID"""
         query = text("""
-            SELECT id, name, url, created_at, updated_at
+            SELECT id, name, url, document_url, created_at, updated_at
             FROM repository
             WHERE id = :id
         """)
@@ -87,6 +89,7 @@ class RepositoryService:
             id=row.id,
             name=row.name,
             url=row.url,
+            document_url=row.document_url,
             created_at=row.created_at or get_utc_now_naive(),
             updated_at=row.updated_at or get_utc_now_naive(),
         )
@@ -96,7 +99,7 @@ class RepositoryService:
     ) -> List[Repository]:
         """Get all repositories with pagination"""
         query = text("""
-            SELECT id, name, url, created_at, updated_at
+            SELECT id, name, url, document_url, created_at, updated_at
             FROM repository
             ORDER BY created_at DESC
             LIMIT :limit OFFSET :skip
@@ -110,6 +113,7 @@ class RepositoryService:
                 id=row.id,
                 name=row.name,
                 url=row.url,
+                document_url=row.document_url,
                 created_at=row.created_at or get_utc_now_naive(),
                 updated_at=row.updated_at or get_utc_now_naive(),
             )
@@ -137,6 +141,10 @@ class RepositoryService:
             update_fields.append("url = :url")
             params["url"] = update_data.url
 
+        if update_data.document_url is not None:
+            update_fields.append("document_url = :document_url")
+            params["document_url"] = update_data.document_url
+
         if not update_fields:
             return existing  # No fields to update
 
@@ -152,7 +160,7 @@ class RepositoryService:
 
         # Fetch the updated record
         select_query = text("""
-            SELECT id, name, url, created_at, updated_at
+            SELECT id, name, url, document_url, created_at, updated_at
             FROM repository
             WHERE id = :id
         """)
@@ -164,6 +172,7 @@ class RepositoryService:
             id=row.id,
             name=row.name,
             url=row.url,
+            document_url=row.document_url,
             created_at=row.created_at or get_utc_now_naive(),
             updated_at=row.updated_at or get_utc_now_naive(),
         )
@@ -356,7 +365,7 @@ class RepositoryService:
         """Search repositories by name or URL"""
         # TiDB compatible: Replace ILIKE with LIKE and UPPER() for case-insensitive search
         query = text("""
-            SELECT id, name, url, created_at, updated_at
+            SELECT id, name, url, document_url, created_at, updated_at
             FROM repository
             WHERE UPPER(name) LIKE UPPER(:search_term) OR UPPER(url) LIKE UPPER(:search_term)
             ORDER BY created_at DESC
@@ -373,6 +382,7 @@ class RepositoryService:
                 id=row.id,
                 name=row.name,
                 url=row.url,
+                document_url=row.document_url,
                 created_at=row.created_at or get_utc_now_naive(),
                 updated_at=row.updated_at or get_utc_now_naive(),
             )
