@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Repository } from '@/data/mockData';
+import { Repository } from '@/types';
 import { apiService } from '@/services/apiService';
 
 interface RepositoryManagerProps {

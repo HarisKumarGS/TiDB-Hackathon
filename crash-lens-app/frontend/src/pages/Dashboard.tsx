@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Repository, Crash, InsightsData } from '@/data/mockData';
+import { Repository, Crash, InsightsData } from '@/types';
 import { apiService } from '@/services/apiService';
 
 export default function Dashboard() {
