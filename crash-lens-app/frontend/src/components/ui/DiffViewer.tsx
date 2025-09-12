@@ -42,7 +42,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({ diffText, className = ''
             
             {/* Diff content */}
             <Diff 
-              viewType="split" 
+              viewType="unified" 
               diffType={file.type}
               hunks={file.hunks}
               className="diff-content"
