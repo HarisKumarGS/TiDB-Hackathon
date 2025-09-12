@@ -59,7 +59,6 @@ class CrashRCA(Base):
     description = Column(Text)
     problem_identification = Column(Text)
     data_collection = Column(Text)
-    analysis = Column(Text)
     root_cause_identification = Column(Text)
     solution = Column(Text)
     author = Column(JSON)

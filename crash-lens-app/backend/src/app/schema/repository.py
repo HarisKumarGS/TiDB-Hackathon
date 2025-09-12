@@ -115,7 +115,6 @@ class CrashRCA(BaseModel):
         None, description="Problem identification details"
     )
     data_collection: Optional[str] = Field(None, description="Data collection process")
-    analysis: Optional[str] = Field(None, description="Analysis details")
     root_cause_identification: Optional[str] = Field(
         None, description="Root cause identification"
     )

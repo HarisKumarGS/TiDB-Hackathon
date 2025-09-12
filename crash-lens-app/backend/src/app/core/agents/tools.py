@@ -2,10 +2,15 @@ from typing import Annotated
 from pathlib import Path
 from langchain_core.tools import tool
 import os
+import uuid
+import json
 import voyageai
 from tidb_vector.integrations import TiDBVectorClient
 from tidb_vector.integrations.vector_client import QueryResult
 from dotenv import load_dotenv
+from sqlalchemy import text
+from ..database import SessionLocal
+from ...utils.datetime_utils import get_utc_now_naive
 
 load_dotenv()
 
@@ -91,10 +96,92 @@ def save_rca_to_db(
      for a crash and needs to persist the findings.
     """
     print("Saving RCA to DB")
-    # todo: save to db
-    print(
-        f"{crash_id}, {description}, {problem_identification}, {data_collection}, {root_cause_identification} {supporting_documents} {solution}"
-    )
+    
+    # Create database session
+    db = SessionLocal()
+    try:
+        # Generate unique ID for the RCA record
+        rca_id = str(uuid.uuid4())
+        now = get_utc_now_naive()
+        
+        # Check if RCA already exists for this crash
+        check_query = text("""
+            SELECT id FROM crash_rca WHERE crash_id = :crash_id
+        """)
+        
+        existing_result = db.execute(check_query, {"crash_id": crash_id})
+        existing_rca = existing_result.fetchone()
+        
+        # Serialize supporting_documents to JSON
+        supporting_documents_json = json.dumps(supporting_documents) if supporting_documents else None
+        
+        if existing_rca:
+            # Update existing RCA record
+            update_query = text("""
+                UPDATE crash_rca 
+                SET description = :description,
+                    problem_identification = :problem_identification,
+                    data_collection = :data_collection,
+                    root_cause_identification = :root_cause_identification,
+                    solution = :solution,
+                    supporting_documents = :supporting_documents,
+                    updated_at = :updated_at
+                WHERE crash_id = :crash_id
+            """)
+            
+            db.execute(update_query, {
+                "crash_id": crash_id,
+                "description": description,
+                "problem_identification": problem_identification,
+                "data_collection": data_collection,
+                "root_cause_identification": root_cause_identification,
+                "solution": solution,
+                "supporting_documents": supporting_documents_json,
+                "updated_at": now,
+            })
+            
+            print(f"Updated existing RCA record for crash_id: {crash_id}")
+        else:
+            # Insert new RCA record
+            insert_query = text("""
+                INSERT INTO crash_rca (
+                    id, crash_id, description, problem_identification, 
+                    data_collection, root_cause_identification, solution, 
+                    supporting_documents, created_at, updated_at
+                ) VALUES (
+                    :id, :crash_id, :description, :problem_identification,
+                    :data_collection, :root_cause_identification, :solution,
+                    :supporting_documents, :created_at, :updated_at
+                )
+            """)
+            
+            db.execute(insert_query, {
+                "id": rca_id,
+                "crash_id": crash_id,
+                "description": description,
+                "problem_identification": problem_identification,
+                "data_collection": data_collection,
+                "root_cause_identification": root_cause_identification,
+                "solution": solution,
+                "supporting_documents": supporting_documents_json,
+                "created_at": now,
+                "updated_at": now,
+            })
+            
+            print(f"Created new RCA record with ID: {rca_id} for crash_id: {crash_id}")
+        
+        # Commit the transaction
+        db.commit()
+        print("RCA successfully saved to database")
+        
+    except Exception as e:
+        # Rollback in case of error
+        db.rollback()
+        print(f"Error saving RCA to database: {str(e)}")
+        raise e
+    finally:
+        # Close the database session
+        db.close()
 
 
 @tool

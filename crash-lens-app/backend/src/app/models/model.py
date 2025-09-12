@@ -46,7 +46,6 @@ class CrashRCA(BaseModel):
     description: Optional[str] = None
     problem_identification: Optional[str] = None
     data_collection: Optional[str] = None
-    analysis: Optional[str] = None
     root_cause_identification: Optional[str] = None
     solution: Optional[str] = None
     author: Optional[List[str]] = None

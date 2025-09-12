@@ -243,7 +243,7 @@ class RepositoryService:
         query = text(
             """
             SELECT id, crash_id, description, problem_identification, data_collection,
-                   analysis, root_cause_identification, solution, author, supporting_documents,
+                   root_cause_identification, solution, author, supporting_documents,
                    created_at, updated_at
             FROM crash_rca
             WHERE crash_id = :crash_id
@@ -262,7 +262,6 @@ class RepositoryService:
             description=row.description,
             problem_identification=row.problem_identification,
             data_collection=row.data_collection,
-            analysis=row.analysis,
             root_cause_identification=row.root_cause_identification,
             solution=row.solution,
             author=row.author,

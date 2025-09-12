@@ -245,10 +245,10 @@ class SimulationService:
 
             query = text("""
                          INSERT INTO crash_rca (id, crash_id, description, problem_identification,
-                                                data_collection, analysis, root_cause_identification,
+                                                data_collection, root_cause_identification,
                                                 solution, author, supporting_documents, created_at, updated_at)
                          VALUES (:id, :crash_id, :description, :problem_identification,
-                                 :data_collection, :analysis, :root_cause_identification,
+                                 :data_collection, :root_cause_identification,
                                  :solution, :author, :supporting_documents, :created_at, :updated_at)
                          """)
 
@@ -260,7 +260,6 @@ class SimulationService:
                     "description": None,
                     "problem_identification": None,
                     "data_collection": None,
-                    "analysis": None,
                     "root_cause_identification": None,
                     "solution": None,
                     "author": None,
