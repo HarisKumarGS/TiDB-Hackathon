@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/select';
 import { CrashTable } from '@/components/crashes/CrashTable';
 import { RepositoryManager } from '@/components/repositories/RepositoryManager';
-import { Repository, Crash } from '@/data/mockData';
+import { Repository, Crash } from '@/types';
 import { apiService } from '@/services/apiService';
 
 export default function CrashList() {

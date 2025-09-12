@@ -130,9 +130,29 @@ class CrashRCA(BaseModel):
         from_attributes = True
 
 
+class CrashWithRCA(BaseModel):
+    """Combined crash and RCA data schema"""
+    
+    # Crash data
+    crash: Crash
+    # RCA data (optional since RCA might not exist)
+    rca: Optional[CrashRCA] = None
+
+    class Config:
+        from_attributes = True
+
+
 class CrashRCAResponse(BaseModel):
     """Response schema for RCA operations"""
 
     success: bool
     message: str
     data: Optional[CrashRCA] = None
+
+
+class CrashWithRCAResponse(BaseModel):
+    """Response schema for combined crash and RCA operations"""
+
+    success: bool
+    message: str
+    data: Optional[CrashWithRCA] = None

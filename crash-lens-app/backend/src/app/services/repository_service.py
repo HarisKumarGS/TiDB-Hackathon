@@ -1,4 +1,5 @@
 import uuid
+import json
 from typing import List, Optional
 
 from fastapi import BackgroundTasks
@@ -7,7 +8,7 @@ from sqlalchemy import text, select
 
 from ..core.code_indexer import CodeIndexer
 from ..models.model import Repository
-from ..schema.repository import RepositoryCreate, RepositoryUpdate, Crash, CrashUpdate, CrashRCA
+from ..schema.repository import RepositoryCreate, RepositoryUpdate, Crash, CrashUpdate, CrashRCA, CrashWithRCA
 from ..utils.datetime_utils import get_utc_now_naive
 
 
@@ -256,6 +257,21 @@ class RepositoryService:
         if not row:
             return None
 
+        # Parse JSON fields if they are strings
+        author = row.author
+        if isinstance(author, str):
+            try:
+                author = json.loads(author)
+            except (json.JSONDecodeError, TypeError):
+                author = None
+
+        supporting_documents = row.supporting_documents
+        if isinstance(supporting_documents, str):
+            try:
+                supporting_documents = json.loads(supporting_documents)
+            except (json.JSONDecodeError, TypeError):
+                supporting_documents = None
+
         return CrashRCA(
             id=row.id,
             crash_id=row.crash_id,
@@ -264,8 +280,8 @@ class RepositoryService:
             data_collection=row.data_collection,
             root_cause_identification=row.root_cause_identification,
             solution=row.solution,
-            author=row.author,
-            supporting_documents=row.supporting_documents,
+            author=author,
+            supporting_documents=supporting_documents,
             created_at=row.created_at or get_utc_now_naive(),
             updated_at=row.updated_at or get_utc_now_naive(),
         )
@@ -356,6 +372,21 @@ class RepositoryService:
             repository_id=row.repository_id,
             created_at=row.created_at or get_utc_now_naive(),
             updated_at=row.updated_at or get_utc_now_naive(),
+        )
+
+    def get_crash_with_rca(self, crash_id: str) -> Optional[CrashWithRCA]:
+        """Get crash data along with its RCA document by crash ID"""
+        # First get the crash data
+        crash = self.get_crash(crash_id)
+        if not crash:
+            return None
+        
+        # Then get the RCA data (optional)
+        rca = self.get_crash_rca(crash_id)
+        
+        return CrashWithRCA(
+            crash=crash,
+            rca=rca
         )
 
     def search_repositories(

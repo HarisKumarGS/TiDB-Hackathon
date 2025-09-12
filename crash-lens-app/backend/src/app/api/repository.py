@@ -12,6 +12,7 @@ from ..schema.repository import (
     CrashUpdate,
     CrashResponse,
     CrashRCAResponse,
+    CrashWithRCAResponse,
 )
 from ..core.database import get_db
 
@@ -243,38 +244,37 @@ def update_crash(
         raise HTTPException(status_code=500, detail=f"Failed to update crash: {str(e)}")
 
 
-@router.get("/crashes/{crash_id}/rca", response_model=CrashRCAResponse)
+@router.get("/crashes/{crash_id}/rca", response_model=CrashWithRCAResponse)
 def get_crash_rca(crash_id: str, db: Session = Depends(get_db)):
     """
-    Get the RCA document associated with a crash.
+    Get the crash data along with its associated RCA document.
 
     - **crash_id**: The unique identifier of the crash
+    
+    Returns both crash information and RCA data (if available) in a single response.
     """
     try:
         repository_service = RepositoryService(db)
 
-        # Ensure crash exists
-        crash = repository_service.get_crash(crash_id)
-        if not crash:
+        # Get crash with RCA data
+        crash_with_rca = repository_service.get_crash_with_rca(crash_id)
+        if not crash_with_rca:
             raise HTTPException(status_code=404, detail="Crash not found")
 
-        # Fetch RCA
-        rca = repository_service.get_crash_rca(crash_id)
-        if not rca:
-            return CrashRCAResponse(
-                success=True,
-                message="No RCA found for this crash",
-                data=None,
-            )
+        # Determine message based on whether RCA exists
+        if crash_with_rca.rca:
+            message = "Crash and RCA data retrieved successfully"
+        else:
+            message = "Crash data retrieved successfully (no RCA found for this crash)"
 
-        return CrashRCAResponse(
+        return CrashWithRCAResponse(
             success=True,
-            message="RCA retrieved successfully",
-            data=rca,
+            message=message,
+            data=crash_with_rca,
         )
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Failed to retrieve crash RCA: {str(e)}"
+            status_code=500, detail=f"Failed to retrieve crash and RCA data: {str(e)}"
         )

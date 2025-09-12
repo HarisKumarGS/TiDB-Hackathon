@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Crash } from '@/data/mockData';
+import { Crash } from '@/types';
 import { cn } from '@/lib/utils';
 
 interface CrashTableProps {

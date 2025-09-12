@@ -1,4 +1,4 @@
-import { Repository, Crash, CrashDetail } from '@/data/mockData';
+import { Repository, Crash, CrashDetail, ApiCrashDetailResponse } from '@/types';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? '/api' 
@@ -57,10 +57,9 @@ class ApiService {
     }
   }
 
-  async getCrashDetail(id: string): Promise<CrashDetail> {
-    // Note: This endpoint may need to be implemented in the backend
-    // For now, we'll throw an error to indicate it's not available
-    throw new Error('Crash detail endpoint not implemented yet');
+  async getCrashDetail(id: string): Promise<ApiCrashDetailResponse> {
+    const response = await this.request<ApiCrashDetailResponse>(`/crashes/${id}/rca`);
+    return response;
   }
 
   async updateCrashStatus(
