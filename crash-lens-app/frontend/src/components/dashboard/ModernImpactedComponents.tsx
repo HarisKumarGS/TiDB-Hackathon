@@ -208,7 +208,7 @@ export function ModernImpactedComponents({ data, className }: ModernComponentsPr
             <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
           </motion.div>
           <span className="text-xs sm:text-sm text-muted-foreground leading-tight">
-            <span className="text-primary font-medium">AI Analysis:</span> UserAuth shows critical patterns
+            <span className="text-primary font-medium">AI Analysis:</span> Critical Issues Found
           </span>
         </div>
       </motion.div>

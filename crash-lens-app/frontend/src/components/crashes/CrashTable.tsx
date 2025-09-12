@@ -162,7 +162,7 @@ export function CrashTable({ crashes, className }: CrashTableProps) {
                 <TableCell>
                   <Badge 
                     variant="outline" 
-                    className={cn("border text-xs", severityColors[crash.severity])}
+                    className={cn("border text-xs capitalize", severityColors[crash.severity])}
                   >
                     {crash.severity}
                   </Badge>
@@ -170,7 +170,7 @@ export function CrashTable({ crashes, className }: CrashTableProps) {
                 <TableCell className="hidden md:table-cell">
                   <Badge 
                     variant="outline" 
-                    className={cn("border text-xs", statusColors[crash.status])}
+                    className={cn("border text-xs capitalize", statusColors[crash.status])}
                   >
                     {crash.status}
                   </Badge>

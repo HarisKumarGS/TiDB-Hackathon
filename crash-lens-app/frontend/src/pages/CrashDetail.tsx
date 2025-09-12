@@ -137,6 +137,46 @@ export default function CrashDetail() {
     }
   };
 
+  const handleViewLogFile = () => {
+    if (!crash?.error_log) {
+      toast({
+        title: 'No Log File',
+        description: 'No error log file is available for this crash.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Create a blob with the log content
+      const blob = new Blob([crash.error_log], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create a temporary link element and trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `crash-${crash.id}-error.log`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'Success',
+        description: 'Log file downloaded successfully.',
+      });
+    } catch (err) {
+      console.error('Failed to download log file:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to download log file. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -198,8 +238,8 @@ export default function CrashDetail() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold gradient-text truncate">
-                {crash.id}
+              <h1 className="text-xl sm:text-xl font-bold gradient-text truncate">
+                {crash.component} : {crash.error_type}
               </h1>
             </div>
           </div>
@@ -223,10 +263,9 @@ export default function CrashDetail() {
                 transition={{ delay: 0.1 }}
               >
                 <div className="flex items-center space-x-3">
-                  <Users className="w-8 h-8 text-destructive" />
                   <div>
                     <p className="text-sm text-muted-foreground">Impacted Users</p>
-                    <p className="text-xl font-bold">{crash.impacted_users?.toLocaleString() || '0'}</p>
+                    <p className="text-md font-bold">{crash.impacted_users?.toLocaleString() || '0'}</p>
                   </div>
                 </div>
               </motion.div>
@@ -238,10 +277,9 @@ export default function CrashDetail() {
                 transition={{ delay: 0.2 }}
               >
                 <div className="flex items-center space-x-3">
-                  <AlertTriangle className="w-8 h-8 text-warning" />
                   <div>
                     <p className="text-sm text-muted-foreground">Component</p>
-                    <p className="text-xl font-bold">{crash.component}</p>
+                    <p className="text-md font-bold">{crash.component}</p>
                   </div>
                 </div>
               </motion.div>
@@ -253,17 +291,9 @@ export default function CrashDetail() {
                 transition={{ delay: 0.3 }}
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 flex items-center justify-center">
-                    <Badge 
-                      variant="outline" 
-                      className={cn("border text-xs", severityColors[crash.severity])}
-                    >
-                      {crash.severity}
-                    </Badge>
-                  </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Severity</p>
-                    <p className="text-xl font-bold">{crash.severity}</p>
+                    <p className="text-md font-bold capitalize">{crash.severity}</p>
                   </div>
                 </div>
               </motion.div>
@@ -275,10 +305,9 @@ export default function CrashDetail() {
                 transition={{ delay: 0.4 }}
               >
                 <div className="flex items-center space-x-3">
-                  <Clock className="w-8 h-8 text-accent" />
                   <div>
                     <p className="text-sm text-muted-foreground">Error Type</p>
-                    <p className="text-lg font-bold">{crash.error_type}</p>
+                    <p className="text-md font-bold">{crash.error_type}</p>
                   </div>
                 </div>
               </motion.div>
@@ -294,7 +323,7 @@ export default function CrashDetail() {
               <h3 className="text-lg font-semibold mb-3 gradient-text">Description</h3>
               <p className="text-muted-foreground leading-relaxed">{crash.description}</p>
               {crash.error_log && (
-                <Button variant="outline" className="mt-4">
+                <Button variant="outline" className="mt-4" onClick={handleViewLogFile}>
                   <FileText className="w-4 h-4 mr-2" />
                   View Log File
                 </Button>
