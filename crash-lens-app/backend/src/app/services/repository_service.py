@@ -8,7 +8,7 @@ from sqlalchemy import text, select
 
 from ..core.code_indexer import CodeIndexer
 from ..models.model import Repository
-from ..schema.repository import RepositoryCreate, RepositoryUpdate, Crash, CrashUpdate, CrashRCA, CrashWithRCA
+from ..schema.repository import RepositoryCreate, RepositoryUpdate, Crash, CrashUpdate, CrashRCA, CrashRCAUpdate, CrashWithRCA
 from ..utils.datetime_utils import get_utc_now_naive
 
 
@@ -245,7 +245,7 @@ class RepositoryService:
             """
             SELECT id, crash_id, description, problem_identification, data_collection,
                    root_cause_identification, solution, author, supporting_documents,
-                   created_at, updated_at
+                   created_at, updated_at, git_diff
             FROM crash_rca
             WHERE crash_id = :crash_id
             """
@@ -282,6 +282,7 @@ class RepositoryService:
             solution=row.solution,
             author=author,
             supporting_documents=supporting_documents,
+            git_diff=row.git_diff,
             created_at=row.created_at or get_utc_now_naive(),
             updated_at=row.updated_at or get_utc_now_naive(),
         )
@@ -388,6 +389,67 @@ class RepositoryService:
             crash=crash,
             rca=rca
         )
+
+    def update_crash_rca(
+        self, crash_id: str, update_data: CrashRCAUpdate
+    ) -> Optional[CrashRCA]:
+        """Update RCA data for a crash"""
+        # First check if RCA exists
+        existing_rca = self.get_crash_rca(crash_id)
+        if not existing_rca:
+            return None
+
+        # Build update query dynamically based on provided fields
+        update_fields = []
+        params = {"crash_id": crash_id, "updated_at": get_utc_now_naive()}
+
+        if update_data.description is not None:
+            update_fields.append("description = :description")
+            params["description"] = update_data.description
+
+        if update_data.problem_identification is not None:
+            update_fields.append("problem_identification = :problem_identification")
+            params["problem_identification"] = update_data.problem_identification
+
+        if update_data.data_collection is not None:
+            update_fields.append("data_collection = :data_collection")
+            params["data_collection"] = update_data.data_collection
+
+        if update_data.root_cause_identification is not None:
+            update_fields.append("root_cause_identification = :root_cause_identification")
+            params["root_cause_identification"] = update_data.root_cause_identification
+
+        if update_data.solution is not None:
+            update_fields.append("solution = :solution")
+            params["solution"] = update_data.solution
+
+        if update_data.author is not None:
+            update_fields.append("author = :author")
+            params["author"] = json.dumps(update_data.author) if update_data.author else None
+
+        if update_data.supporting_documents is not None:
+            update_fields.append("supporting_documents = :supporting_documents")
+            params["supporting_documents"] = json.dumps(update_data.supporting_documents) if update_data.supporting_documents else None
+
+        if update_data.git_diff is not None:
+            update_fields.append("git_diff = :git_diff")
+            params["git_diff"] = update_data.git_diff
+
+        if not update_fields:
+            return existing_rca  # No fields to update
+
+        # TiDB compatible: Split UPDATE and SELECT instead of using RETURNING
+        update_query = text(f"""
+            UPDATE crash_rca
+            SET {", ".join(update_fields)}, updated_at = :updated_at
+            WHERE crash_id = :crash_id
+        """)
+
+        self.db.execute(update_query, params)
+        self.db.commit()
+
+        # Return the updated RCA
+        return self.get_crash_rca(crash_id)
 
     def search_repositories(
         self, search_term: str, skip: int = 0, limit: int = 100

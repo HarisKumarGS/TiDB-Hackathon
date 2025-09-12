@@ -9,6 +9,7 @@ export interface RCAData {
   data_collection: string;
   root_cause_identification: string;
   solution: string;
+  git_diff: string;
   author: any;
   supporting_documents?: string[];
 }

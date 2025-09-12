@@ -50,6 +50,9 @@ class CrashRCA(BaseModel):
     solution: Optional[str] = None
     author: Optional[List[str]] = None
     supporting_documents: Optional[List[str]] = None
+    git_diff: Optional[str] = Field(
+        None, description="Git Diff of the Solution"
+    )
     created_at: Optional[datetime] = Field(None, description="Creation timestamp")
     updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
 

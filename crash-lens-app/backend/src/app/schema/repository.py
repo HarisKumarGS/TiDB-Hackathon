@@ -123,6 +123,9 @@ class CrashRCA(BaseModel):
     supporting_documents: Optional[List[str]] = Field(
         None, description="Supporting document URLs"
     )
+    git_diff: Optional[str] = Field(
+        None, description="Git Diff of the Solution"
+    )
     created_at: Optional[datetime] = Field(None, description="Creation timestamp")
     updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
 
@@ -148,6 +151,27 @@ class CrashRCAResponse(BaseModel):
     success: bool
     message: str
     data: Optional[CrashRCA] = None
+
+
+class CrashRCAUpdate(BaseModel):
+    """Schema for updating RCA data"""
+
+    description: Optional[str] = Field(None, description="RCA description")
+    problem_identification: Optional[str] = Field(
+        None, description="Problem identification details"
+    )
+    data_collection: Optional[str] = Field(None, description="Data collection process")
+    root_cause_identification: Optional[str] = Field(
+        None, description="Root cause identification"
+    )
+    solution: Optional[str] = Field(None, description="Proposed solution")
+    author: Optional[List[str]] = Field(None, description="RCA authors")
+    supporting_documents: Optional[List[str]] = Field(
+        None, description="Supporting document URLs"
+    )
+    git_diff: Optional[str] = Field(
+        None, description="Git Diff of the Solution"
+    )
 
 
 class CrashWithRCAResponse(BaseModel):

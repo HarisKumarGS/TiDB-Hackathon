@@ -246,10 +246,10 @@ class SimulationService:
             query = text("""
                          INSERT INTO crash_rca (id, crash_id, description, problem_identification,
                                                 data_collection, root_cause_identification,
-                                                solution, author, supporting_documents, created_at, updated_at)
+                                                solution, author, supporting_documents, git_diff, created_at, updated_at)
                          VALUES (:id, :crash_id, :description, :problem_identification,
                                  :data_collection, :root_cause_identification,
-                                 :solution, :author, :supporting_documents, :created_at, :updated_at)
+                                 :solution, :author, :supporting_documents, :git_diff, :created_at, :updated_at)
                          """)
 
             self.db.execute(
@@ -264,6 +264,7 @@ class SimulationService:
                     "solution": None,
                     "author": None,
                     "supporting_documents": None,
+                    "git_diff": None,
                     "created_at": now,
                     "updated_at": now,
                 },

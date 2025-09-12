@@ -185,8 +185,72 @@ def save_rca_to_db(
 
 
 @tool
-def save_diff_to_db(diff: Annotated[str, "git diff of the changes"]):
+def save_diff_to_db(
+    crash_id: Annotated[str, "The Id of the crash given"],
+    diff: Annotated[str, "git diff of the changes"]
+    ):
     """Save the git diff of the changes to fix the crash to db"""
-    # todo: save diff to db
     print("Saving diff to DB")
-    print(diff)
+    
+    # Create database session
+    db = SessionLocal()
+    try:
+        now = get_utc_now_naive()
+        
+        # Check if RCA record exists for this crash
+        check_query = text("""
+            SELECT id FROM crash_rca WHERE crash_id = :crash_id
+        """)
+        
+        existing_result = db.execute(check_query, {"crash_id": crash_id})
+        existing_rca = existing_result.fetchone()
+        
+        if existing_rca:
+            # Update existing RCA record with git_diff
+            update_query = text("""
+                UPDATE crash_rca 
+                SET git_diff = :git_diff,
+                    updated_at = :updated_at
+                WHERE crash_id = :crash_id
+            """)
+            
+            db.execute(update_query, {
+                "crash_id": crash_id,
+                "git_diff": diff,
+                "updated_at": now,
+            })
+            
+            print(f"Updated git_diff for existing RCA record with crash_id: {crash_id}")
+        else:
+            # Create new RCA record with git_diff
+            rca_id = str(uuid.uuid4())
+            insert_query = text("""
+                INSERT INTO crash_rca (
+                    id, crash_id, git_diff, created_at, updated_at
+                ) VALUES (
+                    :id, :crash_id, :git_diff, :created_at, :updated_at
+                )
+            """)
+            
+            db.execute(insert_query, {
+                "id": rca_id,
+                "crash_id": crash_id,
+                "git_diff": diff,
+                "created_at": now,
+                "updated_at": now,
+            })
+            
+            print(f"Created new RCA record with git_diff for crash_id: {crash_id}")
+        
+        # Commit the transaction
+        db.commit()
+        print("Git diff successfully saved to database")
+        
+    except Exception as e:
+        # Rollback in case of error
+        db.rollback()
+        print(f"Error saving git diff to database: {str(e)}")
+        raise e
+    finally:
+        # Close the database session
+        db.close()

@@ -86,7 +86,7 @@ export default function CrashDetail() {
           rootCause: rcaInfo?.root_cause_identification || '',
           solution: rcaInfo?.solution || '',
           changesRequired: '', // Not provided in API response
-          gitDiff: '', // Not provided in API response
+          gitDiff: rcaInfo?.git_diff, // Not provided in API response
           
           // Optional fields with defaults
           author: rcaInfo?.author || null,
@@ -356,7 +356,7 @@ export default function CrashDetail() {
             </div>
 
             {/* Changes Required */}
-            {(crash.changesRequired || crash.gitDiff) && (
+            {(crash.gitDiff) && (
               <motion.div
                 className="glass p-6 rounded-xl glow-card"
                 initial={{ opacity: 0, y: 20 }}
@@ -370,10 +370,6 @@ export default function CrashDetail() {
                     Create Pull Request
                   </Button>
                 </div>
-                {crash.changesRequired && (
-                  <p className="text-muted-foreground mb-4">{crash.changesRequired}</p>
-                )}
-                
                 {/* Git Diff */}
                 {crash.gitDiff && (
                   <div className="bg-secondary/20 rounded-lg p-4 font-mono text-sm overflow-x-auto">

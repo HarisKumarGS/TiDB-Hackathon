@@ -12,6 +12,7 @@ from ..schema.repository import (
     CrashUpdate,
     CrashResponse,
     CrashRCAResponse,
+    CrashRCAUpdate,
     CrashWithRCAResponse,
 )
 from ..core.database import get_db
@@ -278,3 +279,38 @@ def get_crash_rca(crash_id: str, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=500, detail=f"Failed to retrieve crash and RCA data: {str(e)}"
         )
+
+
+@router.put("/crashes/{crash_id}/rca", response_model=CrashRCAResponse)
+def update_crash_rca(
+    crash_id: str, update_data: CrashRCAUpdate, db: Session = Depends(get_db)
+):
+    """
+    Update RCA data for a crash.
+
+    - **crash_id**: The unique identifier of the crash
+    - **update_data**: The RCA fields to update (description, problem_identification, 
+                       data_collection, root_cause_identification, solution, author, 
+                       supporting_documents, git_diff)
+    """
+    try:
+        repository_service = RepositoryService(db)
+        
+        # First check if crash exists
+        crash = repository_service.get_crash(crash_id)
+        if not crash:
+            raise HTTPException(status_code=404, detail="Crash not found")
+        
+        # Update RCA data
+        updated_rca = repository_service.update_crash_rca(crash_id, update_data)
+
+        if not updated_rca:
+            raise HTTPException(status_code=404, detail="RCA not found for this crash")
+
+        return CrashRCAResponse(
+            success=True, message="RCA updated successfully", data=updated_rca
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update RCA: {str(e)}")
