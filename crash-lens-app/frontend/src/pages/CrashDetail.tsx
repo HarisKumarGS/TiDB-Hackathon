@@ -181,7 +181,7 @@ export default function CrashDetail() {
   // Loading state
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center min-h-screen">
         <div className="text-center">
           <Loader2 className="w-16 h-16 text-muted-foreground mx-auto mb-4 animate-spin" />
           <h2 className="text-2xl font-bold mb-2">Loading Crash Details</h2>
@@ -196,7 +196,7 @@ export default function CrashDetail() {
   // Error state
   if (error || !crash) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center min-h-screen">
         <div className="text-center">
           <AlertTriangle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">
