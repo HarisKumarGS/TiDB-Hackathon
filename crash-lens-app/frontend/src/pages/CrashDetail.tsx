@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CrashActions } from '@/components/crashes/CrashActions';
+import { DiffViewer } from '@/components/ui/DiffViewer';
 import { CrashDetail as CrashDetailType, ApiCrashDetailResponse } from '@/types';
 import { apiService } from '@/services/apiService';
 import { cn } from '@/lib/utils';
@@ -372,9 +373,10 @@ export default function CrashDetail() {
                 </div>
                 {/* Git Diff */}
                 {crash.gitDiff && (
-                  <div className="bg-secondary/20 rounded-lg p-4 font-mono text-sm overflow-x-auto">
-                    <pre className="whitespace-pre-wrap">{crash.gitDiff}</pre>
-                  </div>
+                  <DiffViewer 
+                    diffText={crash.gitDiff} 
+                    className="rounded-lg border"
+                  />
                 )}
               </motion.div>
             )}

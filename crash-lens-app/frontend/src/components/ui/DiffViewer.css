@@ -1,0 +1,168 @@
+/* Custom styles for react-diff-view to match the app's theme */
+.diff-viewer {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.diff-viewer .diff-content {
+  border-radius: 8px;
+  overflow: hidden;
+  background: hsl(var(--background));
+}
+
+/* File header styling */
+.diff-viewer .diff-file-header {
+  background: hsl(var(--muted) / 0.5);
+  border-bottom: 1px solid hsl(var(--border));
+  padding: 12px 16px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+}
+
+/* Hunk header styling */
+.diff-viewer .diff-hunk-header {
+  background: hsl(var(--muted) / 0.3);
+  color: hsl(var(--muted-foreground));
+  padding: 8px 16px;
+  border-top: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+  font-weight: 500;
+}
+
+/* Line number styling */
+.diff-viewer .diff-gutter {
+  background: hsl(var(--muted) / 0.2);
+  color: hsl(var(--muted-foreground));
+  border-right: 1px solid hsl(var(--border));
+  padding: 0 8px;
+  text-align: right;
+  user-select: none;
+  min-width: 50px;
+}
+
+/* Code content styling */
+.diff-viewer .diff-code {
+  padding: 0 12px;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* Addition lines */
+.diff-viewer .diff-line-insert {
+  background: hsl(var(--success) / 0.1);
+  border-left: 3px solid hsl(var(--success));
+}
+
+.diff-viewer .diff-line-insert .diff-gutter {
+  background: hsl(var(--success) / 0.15);
+  color: hsl(var(--success));
+}
+
+.diff-viewer .diff-line-insert .diff-code {
+  background: hsl(var(--success) / 0.05);
+}
+
+/* Deletion lines */
+.diff-viewer .diff-line-delete {
+  background: hsl(var(--destructive) / 0.1);
+  border-left: 3px solid hsl(var(--destructive));
+}
+
+.diff-viewer .diff-line-delete .diff-gutter {
+  background: hsl(var(--destructive) / 0.15);
+  color: hsl(var(--destructive));
+}
+
+.diff-viewer .diff-line-delete .diff-code {
+  background: hsl(var(--destructive) / 0.05);
+}
+
+/* Normal/context lines */
+.diff-viewer .diff-line-normal {
+  background: hsl(var(--background));
+}
+
+.diff-viewer .diff-line-normal .diff-gutter {
+  background: hsl(var(--muted) / 0.1);
+}
+
+.diff-viewer .diff-line-normal .diff-code {
+  background: hsl(var(--background));
+}
+
+/* Hover effects */
+.diff-viewer .diff-line:hover {
+  background: hsl(var(--muted) / 0.1);
+}
+
+/* Split view specific styles */
+.diff-viewer .diff-split {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.diff-viewer .diff-split .diff-line {
+  display: table-row;
+}
+
+.diff-viewer .diff-split .diff-gutter,
+.diff-viewer .diff-split .diff-code {
+  display: table-cell;
+  vertical-align: top;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .diff-viewer {
+    font-size: 12px;
+  }
+  
+  .diff-viewer .diff-gutter {
+    min-width: 40px;
+    padding: 0 6px;
+  }
+  
+  .diff-viewer .diff-code {
+    padding: 0 8px;
+  }
+}
+
+.diff-code-insert {
+    background-color: #16a34a !important;
+}
+
+.diff-code-delete {
+    background-color: #f25a5a !important;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .diff-viewer .diff-line-insert {
+    background: hsl(var(--success) / 0.15);
+  }
+  
+  .diff-viewer .diff-line-delete {
+    background: hsl(var(--destructive) / 0.15);
+  }
+}
+
+/* Scrollbar styling for diff content */
+.diff-viewer .diff-code::-webkit-scrollbar {
+  height: 6px;
+}
+
+.diff-viewer .diff-code::-webkit-scrollbar-track {
+  background: hsl(var(--muted) / 0.1);
+  border-radius: 3px;
+}
+
+.diff-viewer .diff-code::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+
+.diff-viewer .diff-code::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
