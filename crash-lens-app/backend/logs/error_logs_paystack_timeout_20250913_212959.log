@@ -1,0 +1,19 @@
+Error Log File - Scenario: paystack_timeout
+Generated at: 2025-09-13T21:29:59.543271
+Crash ID: 1f39c09d-4c8a-4760-9717-c0cef75afef5
+==================================================
+
+2025-09-13T15:59:57.731Z BACKEND INFO request_in method=POST path=/cart/checkout user_id=42 request_id=req_001
+2025-09-13T15:59:57.778Z PAYMENTS INFO initializing_paystack amount=129900 channel=CARD email=jane@example.com
+2025-09-13T15:59:57.912Z PAYMENTS ERROR paystack_initialize_timeout timeout_ms=2000
+Traceback (most recent call last):
+  File "/Users/hariskumargs/Documents/Personal/TiDB-Hackathon/sample-ecommerce-app/backend/api/endpoints/cart.py", line 82, in checkout
+    return await cart_service.checkout(data_obj, current_user)
+  File "/Users/hariskumargs/Documents/Personal/TiDB-Hackathon/sample-ecommerce-app/backend/services/cart_service.py", line 130, in checkout
+    return await self.paystack.initialize_payment(
+  File "/Users/hariskumargs/Documents/Personal/TiDB-Hackathon/sample-ecommerce-app/backend/core/paystack.py", line 35, in initialize_payment
+    rsp = await self.client.post(
+  File "/usr/local/lib/python3.11/site-packages/httpx/_client.py", line 1778, in _send_single_request
+    raise httpx.ConnectTimeout("Timed out while connecting to Paystack")
+httpx.ConnectTimeout: Timed out while connecting to Paystack
+2025-09-13T15:59:57.983Z BACKEND INFO response_out status=502 path=/cart/checkout request_id=req_001

@@ -16,6 +16,7 @@ from ..schema.simulation import (
 )
 from .slack_service import SlackService
 from .s3_service import S3Service
+from .websocket_service import websocket_manager
 from ..utils.datetime_utils import get_utc_now_naive
 
 
@@ -87,6 +88,15 @@ class SimulationService:
             users_impacted=users_impacted,
             sample_link=sample_link,
             crash_id=crash_id,
+        )
+
+        # Send WebSocket notification to connected clients
+        background_tasks.add_task(
+            self._send_websocket_notification,
+            crash_id=crash_id,
+            error_details=error_details,
+            users_impacted=users_impacted,
+            repository_id=request.repository_id
         )
 
         return SimulateCrashResponse(
@@ -302,6 +312,31 @@ class SimulationService:
             print(f"Error updating crash entry with error log content: {e}")
             self.db.rollback()
             return False
+
+    async def _send_websocket_notification(
+        self, crash_id: str, error_details: Dict[str, Any], users_impacted: int, repository_id: str
+    ):
+        """Send WebSocket notification for crash - simplified without DB dependency"""
+        try:
+            # Use a simple repository name without DB lookup
+            repository_name = f"Repository-{repository_id}" if repository_id else "Unknown Repository"
+
+            crash_data = {
+                "crash_id": crash_id,
+                "title": error_details.get("title", "Crash detected"),
+                "severity": error_details.get("severity", "Medium"),
+                "repository_name": repository_name,
+                "component": error_details.get("component", "UNKNOWN"),
+                "error_type": error_details.get("error_type", "UNKNOWN"),
+                "users_impacted": users_impacted
+            }
+
+            # Send notification to all connected clients
+            await websocket_manager.send_crash_notification(crash_data)
+            print(f"✅ Sent WebSocket notification for crash {crash_id}")
+
+        except Exception as e:
+            print(f"❌ Error sending WebSocket notification: {e}")
 
     def _now_iso(self) -> str:
         """Get current time in ISO format"""

@@ -15,55 +15,48 @@ export function useWebSocketNotifications() {
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    // Simulate WebSocket connection for demo
-    // In production, this would connect to your actual WebSocket server
-    const simulateWebSocket = () => {
-      const mockAlerts: CrashAlert[] = [
-        {
-          id: 'alert-1',
-          type: 'crash_detected',
-          message: 'Critical crash detected in UserAuth module',
-          severity: 'Critical',
-          repositoryName: 'web-frontend',
-          timestamp: new Date().toISOString()
-        },
-        {
-          id: 'alert-2', 
-          type: 'crash_detected',
-          message: 'High severity crash in PaymentProcessor',
-          severity: 'High',
-          repositoryName: 'web-frontend',
-          timestamp: new Date().toISOString()
-        },
-        {
-          id: 'alert-3',
-          type: 'crash_resolved',
-          message: 'DataSync module crash has been resolved',
-          severity: 'Medium',
-          repositoryName: 'api-service',
-          timestamp: new Date().toISOString()
-        }
-      ];
-
-      let alertIndex = 0;
-      const interval = setInterval(() => {
-        if (alertIndex < mockAlerts.length) {
-          const alert = mockAlerts[alertIndex];
-          handleCrashAlert(alert);
-          alertIndex++;
-        } else {
-          clearInterval(interval);
-        }
-      }, 10000); // Send an alert every 10 seconds
-
-      return () => clearInterval(interval);
+    // Connect to the real WebSocket server
+    const connectToWebSocket = () => {
+      const wsUrl = 'ws://localhost:8000/api/v1/ws';
+      
+      try {
+        wsRef.current = new WebSocket(wsUrl);
+        
+        wsRef.current.onopen = () => {
+          console.log('WebSocket connected to crash notifications');
+        };
+        
+        wsRef.current.onmessage = (event) => {
+          try {
+            const alert: CrashAlert = JSON.parse(event.data);
+            handleCrashAlert(alert);
+          } catch (error) {
+            console.error('Failed to parse WebSocket message:', error);
+          }
+        };
+        
+        wsRef.current.onerror = (error) => {
+          console.error('WebSocket error:', error);
+        };
+        
+        wsRef.current.onclose = (event) => {
+          console.log('WebSocket connection closed:', event.code, event.reason);
+          // Implement reconnection logic
+          setTimeout(() => {
+            if (wsRef.current?.readyState === WebSocket.CLOSED) {
+              connectToWebSocket();
+            }
+          }, 5000);
+        };
+      } catch (error) {
+        console.error('Failed to connect to WebSocket:', error);
+      }
     };
 
-    const cleanup = simulateWebSocket();
+    connectToWebSocket();
 
     // Cleanup on unmount
     return () => {
-      cleanup();
       if (wsRef.current) {
         wsRef.current.close();
       }
@@ -92,7 +85,7 @@ export function useWebSocketNotifications() {
 
     toast({
       title: getTitle(),
-      description: `${alert.message} in ${alert.repositoryName}`,
+      description: `${alert.message}`,
       variant: getVariant(),
       duration: alert.severity === 'Critical' ? 0 : 5000, // Critical alerts stay until dismissed
     });

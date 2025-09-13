@@ -4,6 +4,7 @@ from src.app.api.insights import router as insights_router
 from src.app.api.simulation import router as simulation_router
 from src.app.api.repository import router as repository_router
 from src.app.api.status import router as status_router
+from src.app.api.websocket import router as websocket_router
 
 app = FastAPI(
     title="Crash Lens API",
@@ -25,6 +26,7 @@ app.include_router(insights_router, prefix="/api/v1")
 app.include_router(simulation_router, prefix="/api/v1")
 app.include_router(repository_router, prefix="/api/v1")
 app.include_router(status_router, prefix="/api/v1")
+app.include_router(websocket_router, prefix="/api/v1")
 
 
 @app.get("/")
