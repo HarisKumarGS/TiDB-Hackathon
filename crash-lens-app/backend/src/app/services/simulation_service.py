@@ -77,7 +77,7 @@ class SimulationService:
         # Store S3 URL in database instead of log content
         error_log_updated = self._update_crash_error_log(crash_id, s3_url)
 
-        background_tasks.add_task(self._trigger_agent, f"{traceback_text}\n crash id: {crash_id}")
+        background_tasks.add_task(self._trigger_agent, f"{traceback_text}\n crash id: {crash_id}\n repository id: {request.repository_id}")
 
         # Send Slack notification with real S3 URL
         slack_notification_sent = self.slack_service.send_crash_notification(

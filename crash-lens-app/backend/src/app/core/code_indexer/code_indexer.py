@@ -19,7 +19,7 @@ class CodeIndexer:
             connection_string=os.getenv("TIDB_CONNECTION_STRING"),
             vector_dimension=1024,
             table_name=f"code_indexer_{repo_id}",
-            drop_existing_table=False,
+            drop_existing_table=True,
         )
 
     def index(self):
@@ -30,7 +30,6 @@ class CodeIndexer:
                 file_path = os.path.join(root, file)
                 nodes = parser.parse_file_to_ast(file_path)
                 self.__save_embeddings(nodes)
-                # TODO
 
     def __save_embeddings(self, nodes: list[ASTSemanticNode]):
         node_to_text = [

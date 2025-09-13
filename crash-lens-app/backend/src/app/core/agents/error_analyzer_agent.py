@@ -5,6 +5,7 @@ from langgraph.prebuilt import create_react_agent
 from .tools import (
     get_data_from_embeddings,
     get_file_content_from_path,
+    get_document_images,
     save_rca_to_db,
     save_diff_to_db,
 )
@@ -17,7 +18,7 @@ Agent Workflow:
 
 Understand Input:
 
-Take the stack trace and crash id.
+Take the stack trace, crash id and repository id.
 
 Parse the stack trace to identify error type, method/class, and suspected file paths.
 
@@ -31,7 +32,11 @@ Collect Context:
 
 When a relevant file path is found, use get_file_content_from_path to fetch the entire file.
 
+Gather information from technical documents by calling the get_document_images tool and analyze the document images for any more information.
+
 Gather enough surrounding code to fully understand the bug.
+
+Repeat the steps until you find relevant nodes pointing to the problematic code and solution the the issue.
 
 Root Cause Analysis:
 
@@ -65,6 +70,7 @@ If uncertain, perform additional queries with get_data_from_embeddings.
 tools = [
     get_data_from_embeddings,
     get_file_content_from_path,
+    get_document_images,
     save_rca_to_db,
     save_diff_to_db,
 ]
@@ -79,3 +85,4 @@ error_analyzer_agent_executor = create_react_agent(
     tools,
     prompt=SystemMessage(SYSTEM_PROMPT),
 )
+

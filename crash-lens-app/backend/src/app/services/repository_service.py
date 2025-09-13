@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text, select
 
 from ..core.code_indexer import CodeIndexer
+from ..core.document_indexer import DocumentIndexer
 from ..models.model import Repository
 from ..schema.repository import RepositoryCreate, RepositoryUpdate, Crash, CrashUpdate, CrashRCA, CrashRCAUpdate, CrashWithRCA
 from ..utils.datetime_utils import get_utc_now_naive
@@ -20,6 +21,10 @@ class RepositoryService:
 
     def _index_repository(self, id: str, url: str):
         indexer = CodeIndexer(id, url)
+        indexer.index()
+
+    def _index_documents(self, id: str, url: str):
+        indexer = DocumentIndexer(url, id)
         indexer.index()
 
     def create_repository(
@@ -61,6 +66,10 @@ class RepositoryService:
 
         background_tasks.add_task(
             self._index_repository, repository_id, repository_data.url
+        )
+
+        background_tasks.add_task(
+            self._index_documents, repository_id, repository_data.document_url
         )
 
         return Repository(

@@ -15,18 +15,13 @@ from ...utils.datetime_utils import get_utc_now_naive
 load_dotenv()
 
 voyager = voyageai.Client(api_key=os.getenv("VOYAGE_API_KEY"))
-vector_client = TiDBVectorClient(
-    connection_string=os.getenv("TIDB_CONNECTION_STRING"),
-    vector_dimension=1024,
-    table_name="sample_ecommerce_app_code",
-    drop_existing_table=False,
-)
 
 
 @tool
 def get_data_from_embeddings(
-    query: Annotated[str, "query for vector db"],
-    top_K: Annotated[int, "No of nodes needs to be retried"] = 5,
+        repository_id: Annotated[str, "given repository id"],
+        query: Annotated[str, "query for vector db"],
+        top_K: Annotated[int, "No of nodes needs to be retried"] = 5,
 ) -> list[QueryResult]:
     """
     Retrieves the AST semantic nodes (abstract syntax tree–based code representations enriched with semantic metadata)
@@ -46,13 +41,51 @@ def get_data_from_embeddings(
     query_embedding = voyager.embed(
         texts=[query], model="voyage-code-3", input_type="query"
     ).embeddings[0]
+    vector_client = TiDBVectorClient(
+        connection_string=os.getenv("TIDB_CONNECTION_STRING"),
+        vector_dimension=1024,
+        table_name=f"code_indexer_{repository_id}",
+        drop_existing_table=False,
+    )
     relevant_files = vector_client.query(query_vector=query_embedding, k=top_K)
     return relevant_files
 
 
 @tool
+def get_document_images(
+        repository_id: Annotated[str, "given repository id"],
+        query: Annotated[
+            str, "A full, descriptive natural-language question or request that captures exactly what information you want to retrieve.Avoid single words. Be specific."],
+        top_K: Annotated[int, "No of nodes needs to be retried"] = 3,
+) -> list[QueryResult]:
+    """
+    Retrieve codebase related technical documents relevant to a query and return them as image URLs.
+
+    This tool takes a natural language query,
+    searches the vector database for semantically relevant documents, and converts those document contents into images.
+    It then returns URLs pointing to those images, which can be fetched for display or further reading.
+    """
+    vector_client = TiDBVectorClient(
+        connection_string=os.getenv("TIDB_CONNECTION_STRING"),
+        vector_dimension=1024,
+        table_name=f"document_indexer_{repository_id}",
+        drop_existing_table=True,
+    )
+    embeddings = voyager.multimodal_embed(
+        inputs=[[query]],
+        input_type="query",
+        model="voyage-multimodal-3"
+    ).embeddings[0]
+    print("embeddings:", embeddings)
+    relevant_documents = vector_client.query(query_vector=embeddings, k=top_K)
+    print("Relevent documents")
+    print(relevant_documents)
+    return relevant_documents
+
+
+@tool
 def get_file_content_from_path(
-    path: Annotated[str, "file_path from the meta data of queryResult"],
+        path: Annotated[str, "file_path from the meta data of queryResult"],
 ) -> str:
     """Retrieves the content of the file from the path. Use this to get the full file content from the ast node's metadata"""
     path = Path(path)
@@ -67,27 +100,27 @@ def get_file_content_from_path(
 
 @tool
 def save_rca_to_db(
-    crash_id: Annotated[str, "The Id of the crash given"],
-    description: Annotated[str, "High-level description of the crash incident."],
-    problem_identification: Annotated[
-        str,
-        "Details about how the crash was identified, including symptoms and triggers.",
-    ],
-    data_collection: Annotated[
-        str,
-        "Information or evidence collected during the investigation (logs, traces, metrics).",
-    ],
-    root_cause_identification: Annotated[
-        str,
-        "The underlying root cause of the crash (e.g., null pointer dereference, race condition).",
-    ],
-    solution: Annotated[
-        str,
-        "Proposed or implemented solution to resolve the issue and prevent recurrence.",
-    ],
-    supporting_documents: Annotated[
-        list[str], "List of strings of supporting document references if any ."
-    ],
+        crash_id: Annotated[str, "The Id of the crash given"],
+        description: Annotated[str, "High-level description of the crash incident."],
+        problem_identification: Annotated[
+            str,
+            "Details about how the crash was identified, including symptoms and triggers.",
+        ],
+        data_collection: Annotated[
+            str,
+            "Information or evidence collected during the investigation (logs, traces, metrics).",
+        ],
+        root_cause_identification: Annotated[
+            str,
+            "The underlying root cause of the crash (e.g., null pointer dereference, race condition).",
+        ],
+        solution: Annotated[
+            str,
+            "Proposed or implemented solution to resolve the issue and prevent recurrence.",
+        ],
+        supporting_documents: Annotated[
+            list[str], "List of strings of supporting document references if any ."
+        ],
 ):
     """
     Save a Root Cause Analysis (RCA) record into the database.
@@ -96,39 +129,41 @@ def save_rca_to_db(
      for a crash and needs to persist the findings.
     """
     print("Saving RCA to DB")
-    
+
     # Create database session
     db = SessionLocal()
     try:
         # Generate unique ID for the RCA record
         rca_id = str(uuid.uuid4())
         now = get_utc_now_naive()
-        
+
         # Check if RCA already exists for this crash
         check_query = text("""
-            SELECT id FROM crash_rca WHERE crash_id = :crash_id
-        """)
-        
+                           SELECT id
+                           FROM crash_rca
+                           WHERE crash_id = :crash_id
+                           """)
+
         existing_result = db.execute(check_query, {"crash_id": crash_id})
         existing_rca = existing_result.fetchone()
-        
+
         # Serialize supporting_documents to JSON
         supporting_documents_json = json.dumps(supporting_documents) if supporting_documents else None
-        
+
         if existing_rca:
             # Update existing RCA record
             update_query = text("""
-                UPDATE crash_rca 
-                SET description = :description,
-                    problem_identification = :problem_identification,
-                    data_collection = :data_collection,
-                    root_cause_identification = :root_cause_identification,
-                    solution = :solution,
-                    supporting_documents = :supporting_documents,
-                    updated_at = :updated_at
-                WHERE crash_id = :crash_id
-            """)
-            
+                                UPDATE crash_rca
+                                SET description               = :description,
+                                    problem_identification    = :problem_identification,
+                                    data_collection           = :data_collection,
+                                    root_cause_identification = :root_cause_identification,
+                                    solution                  = :solution,
+                                    supporting_documents      = :supporting_documents,
+                                    updated_at                = :updated_at
+                                WHERE crash_id = :crash_id
+                                """)
+
             db.execute(update_query, {
                 "crash_id": crash_id,
                 "description": description,
@@ -139,22 +174,19 @@ def save_rca_to_db(
                 "supporting_documents": supporting_documents_json,
                 "updated_at": now,
             })
-            
+
             print(f"Updated existing RCA record for crash_id: {crash_id}")
         else:
             # Insert new RCA record
             insert_query = text("""
-                INSERT INTO crash_rca (
-                    id, crash_id, description, problem_identification, 
-                    data_collection, root_cause_identification, solution, 
-                    supporting_documents, created_at, updated_at
-                ) VALUES (
-                    :id, :crash_id, :description, :problem_identification,
-                    :data_collection, :root_cause_identification, :solution,
-                    :supporting_documents, :created_at, :updated_at
-                )
-            """)
-            
+                                INSERT INTO crash_rca (id, crash_id, description, problem_identification,
+                                                       data_collection, root_cause_identification, solution,
+                                                       supporting_documents, created_at, updated_at)
+                                VALUES (:id, :crash_id, :description, :problem_identification,
+                                        :data_collection, :root_cause_identification, :solution,
+                                        :supporting_documents, :created_at, :updated_at)
+                                """)
+
             db.execute(insert_query, {
                 "id": rca_id,
                 "crash_id": crash_id,
@@ -167,13 +199,13 @@ def save_rca_to_db(
                 "created_at": now,
                 "updated_at": now,
             })
-            
+
             print(f"Created new RCA record with ID: {rca_id} for crash_id: {crash_id}")
-        
+
         # Commit the transaction
         db.commit()
         print("RCA successfully saved to database")
-        
+
     except Exception as e:
         # Rollback in case of error
         db.rollback()
@@ -186,52 +218,51 @@ def save_rca_to_db(
 
 @tool
 def save_diff_to_db(
-    crash_id: Annotated[str, "The Id of the crash given"],
-    diff: Annotated[str, "git diff of the changes"]
-    ):
+        crash_id: Annotated[str, "The Id of the crash given"],
+        diff: Annotated[str, "git diff of the changes"]
+):
     """Save the git diff of the changes to fix the crash to db"""
     print("Saving diff to DB")
-    
+
     # Create database session
     db = SessionLocal()
     try:
         now = get_utc_now_naive()
-        
+
         # Check if RCA record exists for this crash
         check_query = text("""
-            SELECT id FROM crash_rca WHERE crash_id = :crash_id
-        """)
-        
+                           SELECT id
+                           FROM crash_rca
+                           WHERE crash_id = :crash_id
+                           """)
+
         existing_result = db.execute(check_query, {"crash_id": crash_id})
         existing_rca = existing_result.fetchone()
-        
+
         if existing_rca:
             # Update existing RCA record with git_diff
             update_query = text("""
-                UPDATE crash_rca 
-                SET git_diff = :git_diff,
-                    updated_at = :updated_at
-                WHERE crash_id = :crash_id
-            """)
-            
+                                UPDATE crash_rca
+                                SET git_diff   = :git_diff,
+                                    updated_at = :updated_at
+                                WHERE crash_id = :crash_id
+                                """)
+
             db.execute(update_query, {
                 "crash_id": crash_id,
                 "git_diff": diff,
                 "updated_at": now,
             })
-            
+
             print(f"Updated git_diff for existing RCA record with crash_id: {crash_id}")
         else:
             # Create new RCA record with git_diff
             rca_id = str(uuid.uuid4())
             insert_query = text("""
-                INSERT INTO crash_rca (
-                    id, crash_id, git_diff, created_at, updated_at
-                ) VALUES (
-                    :id, :crash_id, :git_diff, :created_at, :updated_at
-                )
-            """)
-            
+                                INSERT INTO crash_rca (id, crash_id, git_diff, created_at, updated_at)
+                                VALUES (:id, :crash_id, :git_diff, :created_at, :updated_at)
+                                """)
+
             db.execute(insert_query, {
                 "id": rca_id,
                 "crash_id": crash_id,
@@ -239,13 +270,13 @@ def save_diff_to_db(
                 "created_at": now,
                 "updated_at": now,
             })
-            
+
             print(f"Created new RCA record with git_diff for crash_id: {crash_id}")
-        
+
         # Commit the transaction
         db.commit()
         print("Git diff successfully saved to database")
-        
+
     except Exception as e:
         # Rollback in case of error
         db.rollback()

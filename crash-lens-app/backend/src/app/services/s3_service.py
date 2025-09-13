@@ -1,8 +1,10 @@
+import io
 import os
 import uuid
 from datetime import datetime
 from typing import List, Tuple, Optional
 import boto3
+from PIL.Image import Image
 from botocore.exceptions import ClientError, NoCredentialsError
 
 
@@ -33,7 +35,7 @@ class S3Service:
             self.s3_client = None
 
     def upload_logs_to_s3(
-        self, scenario: str, logs: List[str], crash_id: str
+            self, scenario: str, logs: List[str], crash_id: str
     ) -> Tuple[Optional[str], Optional[str], bool]:
         """
         Upload logs to S3 bucket and return S3 URL, S3 key, and success status
@@ -81,8 +83,28 @@ class S3Service:
             print(f"❌ S3 upload failed: {e}")
             return self._generate_fallback_file(scenario, logs, crash_id)
 
+    def upload_document_image(self, images: list[Image]) -> list[str]:
+        image_urls = []
+        for image in images:
+            buffer = io.BytesIO()
+            image.save(buffer, format="PNG")
+            buffer.seek(0)
+            s3_key = f"documents/{uuid.uuid4()}.png"
+            try:
+                self.s3_client.put_object(
+                    Bucket=self.bucket_name,
+                    Key=s3_key,
+                    Body=buffer,
+                    ContentType="image/png",
+                )
+                image_urls.append(f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/{s3_key}")
+            except Exception as e:
+                print(f"S3 upload failed: {e}")
+                image_urls.append("")
+        return image_urls
+
     def _generate_fallback_file(
-        self, scenario: str, logs: List[str], crash_id: str
+            self, scenario: str, logs: List[str], crash_id: str
     ) -> Tuple[str, str, bool]:
         """Generate fallback local file when S3 upload fails"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
