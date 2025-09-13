@@ -29,6 +29,8 @@ boto3 = "^1.40.28"
 botocore = "^1.40.28"
 pymupdf = "^1.26.4"
 websockets = "^15.0.1"
+pygithub = "^2.8.1"
+aiohappyeyeballs = "^2.6.1"
 
 
 [build-system]
