@@ -181,6 +181,57 @@ class ApiService {
     });
     return response;
   }
+
+  // Crash Simulation
+  async simulateCrash(request: {
+    scenario: string;
+    format?: string;
+    min_logs?: number;
+    no_jitter?: boolean;
+    users_impacted?: number;
+    repository_id: string;
+    comment?: string;
+  }): Promise<{
+    success: boolean;
+    crash_id: string;
+    scenario: string;
+    error_details: {
+      title: string;
+      description: string;
+      severity: string;
+      component: string;
+      error_type: string;
+    };
+    users_impacted: number;
+    logs_generated: number;
+    sample_link: string;
+    slack_notification_sent: boolean;
+    database_entry_created: boolean;
+    message: string;
+  }> {
+    const response = await this.request<{
+      success: boolean;
+      crash_id: string;
+      scenario: string;
+      error_details: {
+        title: string;
+        description: string;
+        severity: string;
+        component: string;
+        error_type: string;
+      };
+      users_impacted: number;
+      logs_generated: number;
+      sample_link: string;
+      slack_notification_sent: boolean;
+      database_entry_created: boolean;
+      message: string;
+    }>('/simulate-crash', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+    return response;
+  }
 }
 
 export const apiService = new ApiService();

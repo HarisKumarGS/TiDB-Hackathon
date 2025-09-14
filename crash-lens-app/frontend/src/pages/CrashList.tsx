@@ -219,7 +219,7 @@ export default function CrashList() {
             <div className="text-red-500">{crashError}</div>
           </div>
         ) : (
-          <CrashTable crashes={filteredCrashes} />
+          <CrashTable crashes={filteredCrashes} repositoryId={selectedRepo}/>
         )}
       </div>
     </div>

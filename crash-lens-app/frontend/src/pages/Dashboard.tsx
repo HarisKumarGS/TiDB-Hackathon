@@ -274,7 +274,7 @@ export default function Dashboard() {
             <div className="text-red-500">{crashError}</div>
           </div>
         ) : (
-          <CrashTable crashes={filteredCrashes.slice(0, 5)} />
+          <CrashTable crashes={filteredCrashes.slice(0, 5)} repositoryId={selectedRepo}/>
         )}
       </div>
     </div>
