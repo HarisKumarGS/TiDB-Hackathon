@@ -146,7 +146,7 @@ export default function CrashDetail() {
     }
   };
 
-  const handleViewLogFile = () => {
+  const handleViewLogFile = async () => {
     if (!crash?.error_log) {
       toast({
         title: 'No Log File',
@@ -157,8 +157,17 @@ export default function CrashDetail() {
     }
 
     try {
-      // Create a blob with the log content
-      const blob = new Blob([crash.error_log], { type: 'text/plain' });
+      // Fetch the file from the URL
+      const response = await fetch(crash.error_log);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch log file: ${response.status} ${response.statusText}`);
+      }
+      
+      // Get the file content as blob
+      const blob = await response.blob();
+      
+      // Create a temporary URL for the blob
       const url = URL.createObjectURL(blob);
       
       // Create a temporary link element and trigger download
