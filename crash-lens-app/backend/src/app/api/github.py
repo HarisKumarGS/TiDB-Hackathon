@@ -46,6 +46,12 @@ async def create_pull_request(
         # Create pull request using the GitHub service
         result = await github_service.create_pull_request_from_rca(crash_rca_id, db)
         
+        # Store the PR URL in the database
+        if result.get("status") == "success" and result.get("pr_url"):
+            rca.pull_request_url = result["pr_url"]
+            db.commit()
+            logger.info(f"Stored PR URL in database for RCA {crash_rca_id}: {result['pr_url']}")
+        
         logger.info(f"Successfully created PR for RCA {crash_rca_id}: {result.get('pr_url')}")
         
         return {
@@ -97,14 +103,13 @@ async def get_pr_status(
                 detail=f"Crash RCA with ID {crash_rca_id} not found"
             )
         
-        # For now, return basic status
-        # In a production system, you might want to store PR information in the database
-        # or query GitHub API to get current PR status
+        # Return status including existing PR URL if available
         return {
             "crash_rca_id": crash_rca_id,
             "has_git_diff": bool(rca.git_diff),
-            "can_create_pr": bool(rca.git_diff),
-            "message": "Use POST /github/create-pr/{crash_rca_id} to create a pull request"
+            "can_create_pr": bool(rca.git_diff) and not rca.pull_request_url,
+            "pull_request_url": rca.pull_request_url,
+            "message": "Pull request already exists" if rca.pull_request_url else "Use POST /github/create-pr/{crash_rca_id} to create a pull request"
         }
         
     except HTTPException:

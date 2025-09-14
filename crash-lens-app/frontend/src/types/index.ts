@@ -10,6 +10,7 @@ export interface RCAData {
   root_cause_identification: string;
   solution: string;
   git_diff: string;
+  pull_request_url?: string;
   author: any;
   supporting_documents?: string[];
 }
@@ -71,6 +72,7 @@ export interface CrashDetail extends Crash {
   solution: string;
   changesRequired: string;
   gitDiff: string;
+  pullRequestUrl?: string;
   author: {
     name: string;
     email: string;

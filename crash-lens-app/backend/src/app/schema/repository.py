@@ -126,6 +126,9 @@ class CrashRCA(BaseModel):
     git_diff: Optional[str] = Field(
         None, description="Git Diff of the Solution"
     )
+    pull_request_url: Optional[str] = Field(
+        None, max_length=500, description="GitHub Pull Request URL"
+    )
     created_at: Optional[datetime] = Field(None, description="Creation timestamp")
     updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
 
@@ -171,6 +174,9 @@ class CrashRCAUpdate(BaseModel):
     )
     git_diff: Optional[str] = Field(
         None, description="Git Diff of the Solution"
+    )
+    pull_request_url: Optional[str] = Field(
+        None, max_length=500, description="GitHub Pull Request URL"
     )
 
 

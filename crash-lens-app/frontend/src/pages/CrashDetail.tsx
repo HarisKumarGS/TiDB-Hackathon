@@ -95,6 +95,7 @@ export default function CrashDetail() {
           solution: rcaInfo?.solution || '',
           changesRequired: '', // Not provided in API response
           gitDiff: rcaInfo?.git_diff, // Not provided in API response
+          pullRequestUrl: rcaInfo?.pull_request_url,
           
           // Optional fields with defaults
           author: rcaInfo?.author || null,
@@ -220,6 +221,14 @@ export default function CrashDetail() {
         number: result.pr_details.pr_number,
         branch: result.pr_details.branch_name,
       });
+
+      // Update the crash data to include the PR URL
+      if (crash) {
+        setCrash({
+          ...crash,
+          pullRequestUrl: result.pr_details.pr_url
+        });
+      }
 
       toast({
         title: 'Pull Request Created!',
@@ -428,14 +437,14 @@ export default function CrashDetail() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold gradient-text">Changes Required</h3>
                   <div className="flex items-center gap-2">
-                    {prCreated ? (
+                    {crash.pullRequestUrl || prCreated ? (
                       <Button 
                         variant="outline" 
-                        onClick={() => window.open(prCreated.url, '_blank')}
+                        onClick={() => window.open(crash.pullRequestUrl || prCreated?.url, '_blank')}
                         className="text-green-600 border-green-600 hover:bg-green-50"
                       >
                         <ExternalLink className="w-4 h-4 mr-2" />
-                        View PR #{prCreated.number}
+                        {crash.pullRequestUrl ? 'View Pull Request' : `View PR #${prCreated?.number}`}
                       </Button>
                     ) : (
                       <Button 

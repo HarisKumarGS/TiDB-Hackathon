@@ -254,7 +254,7 @@ class RepositoryService:
             """
             SELECT id, crash_id, description, problem_identification, data_collection,
                    root_cause_identification, solution, author, supporting_documents,
-                   created_at, updated_at, git_diff
+                   created_at, updated_at, git_diff, pull_request_url
             FROM crash_rca
             WHERE crash_id = :crash_id
             """
@@ -292,6 +292,7 @@ class RepositoryService:
             author=author,
             supporting_documents=supporting_documents,
             git_diff=row.git_diff,
+            pull_request_url=row.pull_request_url,
             created_at=row.created_at or get_utc_now_naive(),
             updated_at=row.updated_at or get_utc_now_naive(),
         )
@@ -443,6 +444,10 @@ class RepositoryService:
         if update_data.git_diff is not None:
             update_fields.append("git_diff = :git_diff")
             params["git_diff"] = update_data.git_diff
+
+        if update_data.pull_request_url is not None:
+            update_fields.append("pull_request_url = :pull_request_url")
+            params["pull_request_url"] = update_data.pull_request_url
 
         if not update_fields:
             return existing_rca  # No fields to update
