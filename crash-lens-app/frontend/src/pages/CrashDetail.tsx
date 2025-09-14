@@ -38,6 +38,12 @@ export default function CrashDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [crashStatus, setCrashStatus] = useState<string>('');
+  const [creatingPR, setCreatingPR] = useState(false);
+  const [prCreated, setPrCreated] = useState<{
+    url: string;
+    number: number;
+    branch: string;
+  } | null>(null);
 
   // Fetch crash details from API
   useEffect(() => {
@@ -81,6 +87,7 @@ export default function CrashDetail() {
           comment: crashInfo.comment,
           
           // RCA fields - map from snake_case to camelCase
+          rca_id: rcaInfo?.id,
           problemIdentification: rcaInfo?.problem_identification || '',
           dataCollection: rcaInfo?.data_collection || '',
           analysis: '', // Not provided in API response
@@ -175,6 +182,60 @@ export default function CrashDetail() {
         description: 'Failed to download log file. Please try again.',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleCreatePullRequest = async () => {
+
+    if (!crash.gitDiff) {
+      toast({
+        title: 'No Changes Available',
+        description: 'No git diff found. Cannot create pull request without changes.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setCreatingPR(true);
+      
+      // First validate the git diff
+      const validation = await apiService.validateGitDiff(crash.rca_id);
+      
+      if (!validation.can_create_pr) {
+        toast({
+          title: 'Invalid Git Diff',
+          description: validation.error || 'The git diff is not valid for creating a pull request.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Create the pull request
+      const result = await apiService.createPullRequest(crash.rca_id);
+      
+      // Store PR details for display
+      setPrCreated({
+        url: result.pr_details.pr_url,
+        number: result.pr_details.pr_number,
+        branch: result.pr_details.branch_name,
+      });
+
+      toast({
+        title: 'Pull Request Created!',
+        description: `Successfully created PR #${result.pr_details.pr_number}`,
+      });
+
+    } catch (err) {
+      console.error('Failed to create pull request:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create pull request';
+      toast({
+        title: 'Error Creating Pull Request',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setCreatingPR(false);
     }
   };
 
@@ -366,10 +427,36 @@ export default function CrashDetail() {
               >
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold gradient-text">Changes Required</h3>
-                  <Button className="bg-gradient-primary hover:opacity-90">
-                    <GitBranch className="w-4 h-4 mr-2" />
-                    Create Pull Request
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {prCreated ? (
+                      <Button 
+                        variant="outline" 
+                        onClick={() => window.open(prCreated.url, '_blank')}
+                        className="text-green-600 border-green-600 hover:bg-green-50"
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        View PR #{prCreated.number}
+                      </Button>
+                    ) : (
+                      <Button 
+                        className="bg-gradient-primary hover:opacity-90"
+                        onClick={handleCreatePullRequest}
+                        disabled={creatingPR || !crash.gitDiff}
+                      >
+                        {creatingPR ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Creating PR...
+                          </>
+                        ) : (
+                          <>
+                            <GitBranch className="w-4 h-4 mr-2" />
+                            Create Pull Request
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 {/* Git Diff */}
                 {crash.gitDiff && (

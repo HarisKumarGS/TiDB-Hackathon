@@ -63,6 +63,7 @@ export interface Crash {
 }
 
 export interface CrashDetail extends Crash {
+  rca_id: string;
   problemIdentification: string;
   dataCollection: string;
   analysis: string;

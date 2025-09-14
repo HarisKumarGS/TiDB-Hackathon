@@ -115,6 +115,72 @@ class ApiService {
     }>(`/insights/${repositoryId}`);
     return response;
   }
+
+  // GitHub Integration
+  async createPullRequest(crashRcaId: string): Promise<{
+    message: string;
+    crash_rca_id: string;
+    pr_details: {
+      pr_url: string;
+      pr_number: number;
+      branch_name: string;
+      title: string;
+      body: string;
+    };
+  }> {
+    const response = await this.request<{
+      message: string;
+      crash_rca_id: string;
+      pr_details: {
+        pr_url: string;
+        pr_number: number;
+        branch_name: string;
+        title: string;
+        body: string;
+      };
+    }>(`/github/create-pr/${crashRcaId}`, {
+      method: 'POST',
+    });
+    return response;
+  }
+
+  async getPullRequestStatus(crashRcaId: string): Promise<{
+    crash_rca_id: string;
+    has_git_diff: boolean;
+    can_create_pr: boolean;
+    message: string;
+  }> {
+    const response = await this.request<{
+      crash_rca_id: string;
+      has_git_diff: boolean;
+      can_create_pr: boolean;
+      message: string;
+    }>(`/github/pr-status/${crashRcaId}`);
+    return response;
+  }
+
+  async validateGitDiff(crashRcaId: string): Promise<{
+    crash_rca_id: string;
+    is_valid: boolean;
+    files_count?: number;
+    files?: string[];
+    can_create_pr: boolean;
+    error?: string;
+    message?: string;
+  }> {
+    const response = await this.request<{
+      crash_rca_id: string;
+      is_valid: boolean;
+      files_count?: number;
+      files?: string[];
+      can_create_pr: boolean;
+      error?: string;
+      message?: string;
+    }>(`/github/validate-diff/${crashRcaId}`, {
+      method: 'POST',
+    });
+    return response;
+  }
 }
 
 export const apiService = new ApiService();
