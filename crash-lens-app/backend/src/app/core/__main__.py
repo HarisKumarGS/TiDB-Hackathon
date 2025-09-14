@@ -29,7 +29,8 @@ async def main():
 httpx.ConnectTimeout: Timed out while connecting to Paystack
 
     crash id: 12345676 
-    repository id: 12345
+    repository id: 1fcca1b6-a577-43e6-bed4-ad3ac98d751b
+    repository url: https://github.com/HarisKumarGS/sample-ecommerce-application
     """,
                 }
             ]

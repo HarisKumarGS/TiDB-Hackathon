@@ -62,7 +62,10 @@ Do not stop investigating until the root cause is well-explained.
 
 RCA should be clear, concise, and structured.
 
-The diff should be minimal but sufficient to fix the bug.
+When saving the RCA, include the supporting code files retrieved using get_file_content_from_path. Make sure to replace any local file paths starting with ./repo-{repositoryId}/... with the provided repository URL, so they are directly accessible in a browser.
+For example: ./repo-12345/sample-ecommerce/core/index.py → <repository-url>/tree/main/sample-ecommerce/core/index.py
+
+The diff should be minimal but sufficient to fix the bug and valid to raise the pr in git.
 
 The diff should be in the format suitable to git patch with proper hunks and right headers
 
