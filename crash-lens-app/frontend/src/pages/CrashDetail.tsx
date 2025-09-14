@@ -412,8 +412,55 @@ export default function CrashDetail() {
 
             {/* RCA Sections */}
             <div className="space-y-6">
+              {/* Problem Identification */}
+              {crash.problemIdentification && (
+                <motion.div
+                  className="glass p-6 rounded-xl glow-card"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <h3 className="text-lg font-semibold mb-3 gradient-text">
+                    Problem Identification
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {crash.problemIdentification}
+                  </p>
+                </motion.div>
+              )}
+
+              {/* Supporting Documents - moved here after Problem Identification */}
+              {crash.supportingDocs && crash.supportingDocs.length > 0 && (
+                <motion.div
+                  className="glass p-6 rounded-xl glow-card"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.65 }}
+                >
+                  <h3 className="text-lg font-semibold mb-4 gradient-text">Supporting Documents</h3>
+                  <div className="space-y-3">
+                    {crash.supportingDocs.map((doc, index) => (
+                      <div key={index} className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{doc.title || 'Untitled'}</p>
+                          <p className="text-sm text-muted-foreground">{doc.type || 'Document'}</p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => window.open(doc.title || '#', '_blank')}
+                          title={`Open ${doc.title || 'document'}`}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Remaining RCA Sections */}
               {[
-                { title: 'Problem Identification', content: crash.problemIdentification, delay: 0.6 },
                 { title: 'Data Collection', content: crash.dataCollection, delay: 0.7 },
                 { title: 'Root Cause Identification', content: crash.rootCause, delay: 0.9 },
                 { title: 'Solution', content: crash.solution, delay: 1.0 }
@@ -535,30 +582,6 @@ export default function CrashDetail() {
               </motion.div>
             )}
 
-            {/* Supporting Documents */}
-            {crash.supportingDocs && crash.supportingDocs.length > 0 && (
-              <motion.div
-                className="glass p-6 rounded-xl glow-card"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.7 }}
-              >
-                <h3 className="text-lg font-semibold mb-4 gradient-text">Supporting Documents</h3>
-                <div className="space-y-3">
-                  {crash.supportingDocs.map((doc, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{doc.title || 'Untitled'}</p>
-                        <p className="text-sm text-muted-foreground">{doc.type || 'Document'}</p>
-                      </div>
-                      <Button variant="ghost" size="sm">
-                        <ExternalLink className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
           </div>
         </div>
       </div>
