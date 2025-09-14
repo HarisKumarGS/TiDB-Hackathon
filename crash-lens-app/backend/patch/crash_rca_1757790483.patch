@@ -1,0 +1,32 @@
+diff --git a/backend/core/paystack.py b/backend/core/paystack.py
+index 53e4a7b..572c360 100644
+--- a/backend/core/paystack.py
++++ b/backend/core/paystack.py
+@@ -1,6 +1,7 @@
+ import os
+ import httpx
+ from datetime import datetime
++from httpx import ReadTimeout
+
+ class Paystack:
+     def __init__(self, secret_key: str = None):
+@@ -50,9 +51,16 @@ class Paystack:
+         url = f"{self.base_url}transaction/verify/{payment_ref}"
+         headers = self.get_headers()
+
+-        rsp = await self.client.get(url=url, headers=headers)
+-        rsp.raise_for_status()
+-        return rsp.json()
++        try:
++            rsp = await self.client.get(url=url, headers=headers, timeout=30)
++            rsp.raise_for_status()
++            return rsp.json()
++        except ReadTimeout:
++            # Retry the request with an increased timeout
++            rsp = await self.client.get(url=url, headers=headers, timeout=60)
++            rsp.raise_for_status()
++            return rsp.json()
+
+     def get_headers(self) -> dict:
+         return {
+            
