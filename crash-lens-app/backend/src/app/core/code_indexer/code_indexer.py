@@ -30,6 +30,31 @@ class CodeIndexer:
                 file_path = os.path.join(root, file)
                 nodes = parser.parse_file_to_ast(file_path)
                 self.__save_embeddings(nodes)
+        # Add Repository Status Update Here
+        self._update_repository_status("indexed")
+
+    def _update_repository_status(self, status: str):
+        """Update repository status in the database"""
+        from sqlalchemy import text
+        from ...core.database import get_db
+        
+        # Get database session
+        db = next(get_db())
+        try:
+            update_query = text("""
+                UPDATE repository 
+                SET status = :status, updated_at = NOW()
+                WHERE id = :repo_id
+            """)
+            
+            db.execute(update_query, {"status": status, "repo_id": self.id})
+            db.commit()
+            print(f"Repository {self.id} status updated to: {status}")
+        except Exception as e:
+            print(f"Error updating repository status: {e}")
+            db.rollback()
+        finally:
+            db.close()
 
     def __save_embeddings(self, nodes: list[ASTSemanticNode]):
         node_to_text = [

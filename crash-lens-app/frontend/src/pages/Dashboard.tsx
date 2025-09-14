@@ -25,9 +25,15 @@ import {
 } from '@/components/ui/select';
 import { Repository, Crash, InsightsData } from '@/types';
 import { apiService } from '@/services/apiService';
+import { useRepository } from '@/contexts/RepositoryContext';
 
 export default function Dashboard() {
-  const [repositories, setRepositories] = useState<Repository[]>([]);
+  const { 
+    repositories, 
+    setRepositories, 
+    selectedRepository, 
+    setSelectedRepository 
+  } = useRepository();
   const [selectedRepo, setSelectedRepo] = useState('');
   const [isLoadingRepos, setIsLoadingRepos] = useState(true);
   const [repoError, setRepoError] = useState<string | null>(null);
@@ -107,6 +113,7 @@ export default function Dashboard() {
         setRepositories(repos);
         if (repos.length > 0) {
           setSelectedRepo(repos[0].id);
+          setSelectedRepository(repos[0]);
         }
       } catch (error) {
         console.error('Failed to fetch repositories:', error);
@@ -118,7 +125,7 @@ export default function Dashboard() {
     };
 
     fetchRepositories();
-  }, []);
+  }, [setRepositories, setSelectedRepository]);
 
   // Fetch crashes and insights when selected repository changes
   useEffect(() => {
@@ -132,14 +139,16 @@ export default function Dashboard() {
   }, [selectedRepo]);
 
   const handleAddRepository = (newRepo: Repository) => {
-    setRepositories(prev => [...prev, newRepo]);
+    const updatedRepos = [...repositories, newRepo];
+    setRepositories(updatedRepos);
   };
 
   const handleRemoveRepository = (id: string) => {
-    setRepositories(prev => prev.filter(repo => repo.id !== id));
+    const updatedRepos = repositories.filter(repo => repo.id !== id);
+    setRepositories(updatedRepos);
     if (selectedRepo === id) {
-      const remaining = repositories.filter(repo => repo.id !== id);
-      setSelectedRepo(remaining[0]?.id || '');
+      setSelectedRepo(updatedRepos[0]?.id || '');
+      setSelectedRepository(updatedRepos[0] || null);
     }
   };
 
@@ -161,7 +170,11 @@ export default function Dashboard() {
             <div className="flex flex-col gap-2">
               <Select 
                 value={selectedRepo} 
-                onValueChange={setSelectedRepo}
+                onValueChange={(value) => {
+                  setSelectedRepo(value);
+                  const repo = repositories.find(r => r.id === value);
+                  setSelectedRepository(repo || null);
+                }}
                 disabled={isLoadingRepos}
               >
                 <SelectTrigger className="w-full sm:w-48 bg-secondary/50 border-border/30">

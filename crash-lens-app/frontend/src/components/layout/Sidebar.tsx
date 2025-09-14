@@ -9,6 +9,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRepository } from '@/contexts/RepositoryContext';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: BarChart3 },
@@ -17,6 +18,7 @@ const navigation = [
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const { selectedRepository } = useRepository();
 
   return (
     <motion.div 
@@ -92,27 +94,29 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* AI Status Indicator */}
-      <div className="p-4 border-t border-border/30">
-        <div className={cn(
-          "flex items-center p-3 rounded-lg glass",
-          collapsed ? "justify-center" : "space-x-3"
-        )}>
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-success/20 flex-shrink-0">
-            <div className="w-3 h-3 rounded-full bg-success animate-pulse-slow" />
+      {/* AI Status Indicator - Only show when repository status is not pending */}
+      {selectedRepository && selectedRepository.status !== 'pending' && (
+        <div className="p-4 border-t border-border/30">
+          <div className={cn(
+            "flex items-center p-3 rounded-lg glass",
+            collapsed ? "justify-center" : "space-x-3"
+          )}>
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-success/20 flex-shrink-0">
+              <div className="w-3 h-3 rounded-full bg-success animate-pulse-slow" />
+            </div>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <p className="text-sm font-medium text-success">AI Online</p>
+                <p className="text-xs text-muted-foreground">Ready to analyze</p>
+              </motion.div>
+            )}
           </div>
-          {!collapsed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <p className="text-sm font-medium text-success">AI Online</p>
-              <p className="text-xs text-muted-foreground">Ready to analyze</p>
-            </motion.div>
-          )}
         </div>
-      </div>
+      )}
     </motion.div>
   );
 }

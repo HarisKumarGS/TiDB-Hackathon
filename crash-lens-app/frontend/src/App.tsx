@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
+import { RepositoryProvider } from "@/contexts/RepositoryContext";
 import { useWebSocketNotifications } from "@/hooks/useWebSocketNotifications";
 import Dashboard from "./pages/Dashboard";
 import CrashList from "./pages/CrashList";
@@ -22,19 +23,21 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <WebSocketProvider>
-        <BrowserRouter>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/crashes" element={<CrashList />} />
-              <Route path="/crashes/:id" element={<CrashDetail />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
-        </BrowserRouter>
-      </WebSocketProvider>
+      <RepositoryProvider>
+        <WebSocketProvider>
+          <BrowserRouter>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/crashes" element={<CrashList />} />
+                <Route path="/crashes/:id" element={<CrashDetail />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Layout>
+          </BrowserRouter>
+        </WebSocketProvider>
+      </RepositoryProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

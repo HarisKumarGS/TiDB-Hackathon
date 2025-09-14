@@ -40,6 +40,7 @@ export interface Repository {
   name: string;
   url: string;
   document_url?: string;
+  status?: string;
   created_at?: string;
   updated_at?: string;
   // Additional frontend-specific fields

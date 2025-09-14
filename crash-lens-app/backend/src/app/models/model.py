@@ -10,6 +10,7 @@ class Repository(BaseModel):
     name: str = Field(..., max_length=255)
     url: str = Field(..., max_length=255)
     document_url: Optional[str] = Field(None, max_length=500, description="Documentation URL")
+    status: str = Field(default="pending", max_length=50, description="Repository status")
     created_at: Optional[datetime] = Field(None, description="Creation timestamp")
     updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
 

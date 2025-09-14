@@ -16,6 +16,7 @@ class Repository(Base):
     url = Column(String(500), nullable=False)
     document_url = Column(String(500), nullable=True)
     description = Column(Text)
+    status = Column(String(50), nullable=False, default="pending")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

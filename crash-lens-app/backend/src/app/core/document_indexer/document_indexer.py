@@ -48,3 +48,28 @@ class DocumentIndexer:
         urls = self.s3_service.upload_document_image(images)
         self.vector_client.insert(embeddings=embeddings, texts=urls)
         print("Documents indexed successfully")
+        # Add Repository Status Update Here
+        self._update_repository_status("documents_indexed")
+
+    def _update_repository_status(self, status: str):
+        """Update repository status in the database"""
+        from sqlalchemy import text
+        from ...core.database import get_db
+        
+        # Get database session
+        db = next(get_db())
+        try:
+            update_query = text("""
+                UPDATE repository 
+                SET status = :status, updated_at = NOW()
+                WHERE id = :repo_id
+            """)
+            
+            db.execute(update_query, {"status": status, "repo_id": self.repo_id})
+            db.commit()
+            print(f"Repository {self.repo_id} status updated to: {status}")
+        except Exception as e:
+            print(f"Error updating repository status: {e}")
+            db.rollback()
+        finally:
+            db.close()
