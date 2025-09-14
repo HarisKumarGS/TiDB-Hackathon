@@ -3,9 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
-  Users, 
   AlertTriangle, 
-  Clock, 
   FileText,
   GitBranch,
   ExternalLink,
@@ -19,7 +17,7 @@ import { CrashActions } from '@/components/crashes/CrashActions';
 import { DiffViewer } from '@/components/ui/DiffViewer';
 import { CrashDetail as CrashDetailType, ApiCrashDetailResponse } from '@/types';
 import { apiService } from '@/services/apiService';
-import { cn } from '@/lib/utils';
+import Markdown from 'marked-react';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -194,6 +192,14 @@ export default function CrashDetail() {
       });
     }
   };
+
+  const splitSentencesWithNewLines = (text: String, character: string) => {
+    const sentences = text
+        .split(character)
+        .map(sentence => sentence.trim())
+        .filter(sentence => sentence.length > 0);
+    return sentences.join('.\n');
+}
 
   const handleCreatePullRequest = async () => {
 
@@ -401,7 +407,9 @@ export default function CrashDetail() {
               transition={{ delay: 0.5 }}
             >
               <h3 className="text-lg font-semibold mb-3 gradient-text">Description</h3>
-              <p className="text-muted-foreground leading-relaxed">{crash.description}</p>
+              <p className="text-muted-foreground leading-relaxed">
+                <Markdown>{crash.description}</Markdown>
+              </p>
               {crash.error_log && (
                 <Button variant="outline" className="mt-4" onClick={handleViewLogFile}>
                   <FileText className="w-4 h-4 mr-2" />
@@ -423,8 +431,8 @@ export default function CrashDetail() {
                   <h3 className="text-lg font-semibold mb-3 gradient-text">
                     Problem Identification
                   </h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {crash.problemIdentification}
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                  <Markdown>{crash.problemIdentification}</Markdown>
                   </p>
                 </motion.div>
               )}
@@ -475,8 +483,8 @@ export default function CrashDetail() {
                   <h3 className="text-lg font-semibold mb-3 gradient-text">
                     {section.title}
                   </h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {section.content}
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                    <Markdown>{section.content}</Markdown>
                   </p>
                 </motion.div>
               ))}

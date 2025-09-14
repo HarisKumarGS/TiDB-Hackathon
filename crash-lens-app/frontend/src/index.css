@@ -156,3 +156,9 @@ All colors MUST be HSL.
     background-size: 50px 50px;
   }
 }
+
+code {
+  background: black;
+  color: white;
+  padding: 4px;
+}

@@ -56,6 +56,8 @@ Call save_diff_to_db with the generated code diff suitable directly to apply pat
 
 Important Guidelines:
 
+Always use Markdown format for the outputs
+
 Always use the tools to fetch relevant data instead of assuming missing context.
 
 Do not stop investigating until the root cause is well-explained.
