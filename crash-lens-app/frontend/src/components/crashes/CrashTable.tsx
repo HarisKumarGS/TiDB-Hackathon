@@ -5,7 +5,8 @@ import {
   AlertTriangle, 
   Users, 
   Search,
-  ExternalLink 
+  ExternalLink,
+  Zap
 } from 'lucide-react';
 import {
   Table,
@@ -27,10 +28,13 @@ import {
 } from '@/components/ui/select';
 import { Crash } from '@/types';
 import { cn } from '@/lib/utils';
+import { apiService } from '@/services/apiService';
+import { useToast } from '@/hooks/use-toast';
 
 interface CrashTableProps {
   crashes: Crash[];
   className?: string;
+  repositoryId?: string;
 }
 
 const severityColors = {
@@ -47,11 +51,29 @@ const statusColors = {
   closed: 'bg-muted/10 text-muted-foreground border-muted/20'
 };
 
-export function CrashTable({ crashes, className }: CrashTableProps) {
+// Crash scenarios lookup from backend
+const CRASH_SCENARIOS = [
+  'paystack_timeout',
+  'migration_type_mismatch',
+  'taskq_oversell',
+  'verify_payment_timeout',
+  'db_startup_failure',
+  'stripe_signature_error'
+];
+
+// Log formats
+const LOG_FORMATS = ['plain', 'json'];
+
+export function CrashTable({ crashes, className, repositoryId }: CrashTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isSimulating, setIsSimulating] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  console.log(`Repooository ${repositoryId}`)
+
 
   const filteredCrashes = crashes.filter(crash => {
     const matchesSearch = 
@@ -69,6 +91,71 @@ export function CrashTable({ crashes, className }: CrashTableProps) {
     navigate(`/crashes/${crashId}`);
   };
 
+  // Function to generate random values for simulation request
+  const generateRandomSimulationData = () => {
+    const randomScenario = CRASH_SCENARIOS[Math.floor(Math.random() * CRASH_SCENARIOS.length)];
+    const randomFormat = LOG_FORMATS[Math.floor(Math.random() * LOG_FORMATS.length)];
+    const randomMinLogs = Math.floor(Math.random() * 200) + 50; // 50-250
+    const randomUsersImpacted = Math.floor(Math.random() * 5000) + 100; // 100-5100
+    const randomNoJitter = Math.random() < 0.3; // 30% chance of no jitter
+
+    return {
+      scenario: randomScenario,
+      format: randomFormat,
+      min_logs: randomMinLogs,
+      no_jitter: randomNoJitter,
+      users_impacted: randomUsersImpacted,
+      comment: `Simulated crash for testing - ${randomScenario}`
+    };
+  };
+
+  const handleSimulateCrash = async () => {
+    if (!repositoryId) {
+      toast({
+        title: "No Repository Selected",
+        description: "Please select a repository before simulating a crash.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSimulating(true);
+    
+    try {
+      const simulationData = generateRandomSimulationData();
+      
+      const response = await apiService.simulateCrash({
+        ...simulationData,
+        repository_id: repositoryId,
+      });
+
+      toast({
+        title: "Crash Simulation Started",
+        description: `Successfully simulated ${response.scenario} crash`,
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/crashes/${response.crash_id}`)}
+            className="ml-2"
+          >
+            View Crash
+          </Button>
+        ),
+      });
+
+    } catch (error) {
+      console.error('Error simulating crash:', error);
+      toast({
+        title: "Simulation Failed",
+        description: "Failed to simulate crash. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSimulating(false);
+    }
+  };
+
   return (
     <motion.div
       className={cn("glass rounded-xl glow-card overflow-hidden", className)}
@@ -80,6 +167,15 @@ export function CrashTable({ crashes, className }: CrashTableProps) {
       <div className="p-4 sm:p-6 border-b border-border/30">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <h3 className="text-lg font-semibold gradient-text">Recent Crashes</h3>
+          <Button
+            onClick={handleSimulateCrash}
+            disabled={isSimulating || !repositoryId}
+            className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0"
+            size="sm"
+          >
+            <Zap className="w-4 h-4 mr-2" />
+            {isSimulating ? 'Simulating...' : 'Simulate Crash'}
+          </Button>
         </div>
         
         {/* Filters */}
