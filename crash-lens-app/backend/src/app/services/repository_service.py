@@ -197,17 +197,49 @@ class RepositoryService:
         )
 
     def delete_repository(self, repository_id: str) -> bool:
-        """Delete a repository"""
+        """Delete a repository and all associated crashes and RCA records"""
         # First check if repository exists
         existing = self.get_repository(repository_id)
         if not existing:
             return False
 
-        query = text("DELETE FROM repository WHERE id = :id")
-        self.db.execute(query, {"id": repository_id})
-        self.db.commit()
+        try:
+            # Step 1: Get all crashes for this repository
+            crashes_query = text("""
+                SELECT id FROM crash WHERE repository_id = :repository_id
+            """)
+            crash_result = self.db.execute(crashes_query, {"repository_id": repository_id})
+            crash_ids = [row.id for row in crash_result.fetchall()]
 
-        return True
+            # Step 2: Delete all crash_rca records for each crash
+            if crash_ids:
+                # Delete RCA records one by one to avoid SQL injection and ensure TiDB compatibility
+                for crash_id in crash_ids:
+                    delete_rca_query = text("""
+                        DELETE FROM crash_rca WHERE crash_id = :crash_id
+                    """)
+                    self.db.execute(delete_rca_query, {"crash_id": crash_id})
+
+            # Step 3: Delete all crash records for this repository
+            delete_crashes_query = text("""
+                DELETE FROM crash WHERE repository_id = :repository_id
+            """)
+            self.db.execute(delete_crashes_query, {"repository_id": repository_id})
+
+            # Step 4: Finally delete the repository
+            delete_repository_query = text("""
+                DELETE FROM repository WHERE id = :id
+            """)
+            self.db.execute(delete_repository_query, {"id": repository_id})
+
+            # Commit all changes
+            self.db.commit()
+            return True
+
+        except Exception as e:
+            # Rollback in case of any error
+            self.db.rollback()
+            raise e
 
     def get_repository_count(self) -> int:
         """Get total count of repositories"""
