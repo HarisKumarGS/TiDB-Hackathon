@@ -22,14 +22,22 @@ interface RepositoryManagerProps {
   repositories: Repository[];
   onRepositoryAdd: (repository: Repository) => void;
   onRepositoryRemove: (id: string) => void;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function RepositoryManager({ 
   repositories, 
   onRepositoryAdd, 
-  onRepositoryRemove 
+  onRepositoryRemove,
+  isOpen: externalIsOpen,
+  onOpenChange: externalOnOpenChange
 }: RepositoryManagerProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  
+  // Use external state if provided, otherwise use internal state
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  const setIsOpen = externalOnOpenChange || setInternalIsOpen;
   const [repoUrl, setRepoUrl] = useState('');
   const [documentUrl, setDocumentUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -119,98 +127,194 @@ export function RepositoryManager({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-gradient-primary hover:opacity-90">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Repository
-        </Button>
-      </DialogTrigger>
-        <DialogContent className="glass max-w-md sm:max-w-lg mx-4">
-          <DialogHeader>
-          <DialogTitle className="gradient-text">Add GitHub Repository</DialogTitle>
-          <DialogDescription>
-            Add a GitHub repository to monitor for crashes and analyze with AI.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="repo-url">Repository URL</Label>
-            <Input
-              id="repo-url"
-              placeholder="https://github.com/owner/repository"
-              value={repoUrl}
-              onChange={(e) => setRepoUrl(e.target.value)}
-              className="bg-secondary/50 border-border/30"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="document-url">Documents Link</Label>
-            <Input
-              id="document-url"
-              placeholder="https://docs.example.com/project (optional)"
-              value={documentUrl}
-              onChange={(e) => setDocumentUrl(e.target.value)}
-              className="bg-secondary/50 border-border/30"
-            />
-          </div>
-          
-          {repositories.length > 0 && (
-            <div className="space-y-2">
-              <Label>Current Repositories</Label>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {repositories.map((repo) => (
-                  <motion.div
-                    key={repo.id}
-                    className="flex items-center justify-between p-2 rounded-lg bg-secondary/20"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <GitBranch className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">{repo.name}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {repo.crashCount} crashes
-                      </Badge>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => window.open(repo.url, '_blank')}
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveRepository(repo.id, repo.name)}
-                      >
-                        <Trash2 className="w-3 h-3 text-destructive" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                ))}
+    <>
+      {/* Only show trigger button if not using external state */}
+      {externalIsOpen === undefined && (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-primary hover:opacity-90">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Repository
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="glass max-w-md sm:max-w-lg mx-4">
+            <DialogHeader>
+              <DialogTitle className="gradient-text">Add GitHub Repository</DialogTitle>
+              <DialogDescription>
+                Add a GitHub repository to monitor for crashes and analyze with AI.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="repo-url">Repository URL</Label>
+                <Input
+                  id="repo-url"
+                  placeholder="https://github.com/owner/repository"
+                  value={repoUrl}
+                  onChange={(e) => setRepoUrl(e.target.value)}
+                  className="bg-secondary/50 border-border/30"
+                />
               </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="document-url">Documents Link</Label>
+                <Input
+                  id="document-url"
+                  placeholder="https://docs.example.com/project (optional)"
+                  value={documentUrl}
+                  onChange={(e) => setDocumentUrl(e.target.value)}
+                  className="bg-secondary/50 border-border/30"
+                />
+              </div>
+              
+              {repositories.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Current Repositories</Label>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {repositories.map((repo) => (
+                      <motion.div
+                        key={repo.id}
+                        className="flex items-center justify-between p-2 rounded-lg bg-secondary/20"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <GitBranch className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">{repo.name}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {repo.crashCount} crashes
+                          </Badge>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(repo.url, '_blank')}
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveRepository(repo.id, repo.name)}
+                          >
+                            <Trash2 className="w-3 h-3 text-destructive" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleAddRepository}
-            disabled={!repoUrl.trim() || isLoading}
-            className="bg-gradient-primary hover:opacity-90"
-          >
-            {isLoading ? 'Adding...' : 'Add Repository'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAddRepository}
+                disabled={!repoUrl.trim() || isLoading}
+                className="bg-gradient-primary hover:opacity-90"
+              >
+                {isLoading ? 'Adding...' : 'Add Repository'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* External state controlled dialog */}
+      {externalIsOpen !== undefined && (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogContent className="glass max-w-md sm:max-w-lg mx-4">
+            <DialogHeader>
+              <DialogTitle className="gradient-text">Add GitHub Repository</DialogTitle>
+              <DialogDescription>
+                Add a GitHub repository to monitor for crashes and analyze with AI.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="repo-url">Repository URL</Label>
+                <Input
+                  id="repo-url"
+                  placeholder="https://github.com/owner/repository"
+                  value={repoUrl}
+                  onChange={(e) => setRepoUrl(e.target.value)}
+                  className="bg-secondary/50 border-border/30"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="document-url">Documents Link</Label>
+                <Input
+                  id="document-url"
+                  placeholder="https://docs.example.com/project (optional)"
+                  value={documentUrl}
+                  onChange={(e) => setDocumentUrl(e.target.value)}
+                  className="bg-secondary/50 border-border/30"
+                />
+              </div>
+              
+              {repositories.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Current Repositories</Label>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {repositories.map((repo) => (
+                      <motion.div
+                        key={repo.id}
+                        className="flex items-center justify-between p-2 rounded-lg bg-secondary/20"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <GitBranch className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">{repo.name}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {repo.crashCount} crashes
+                          </Badge>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(repo.url, '_blank')}
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveRepository(repo.id, repo.name)}
+                          >
+                            <Trash2 className="w-3 h-3 text-destructive" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAddRepository}
+                disabled={!repoUrl.trim() || isLoading}
+                className="bg-gradient-primary hover:opacity-90"
+              >
+                {isLoading ? 'Adding...' : 'Add Repository'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }

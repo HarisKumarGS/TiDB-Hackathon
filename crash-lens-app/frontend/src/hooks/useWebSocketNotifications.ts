@@ -23,7 +23,7 @@ export function useWebSocketNotifications() {
         wsRef.current = new WebSocket(wsUrl);
         
         wsRef.current.onopen = () => {
-          console.log('WebSocket connected to crash notifications');
+          console.log('WebSocket connected to Realtime Updates');
         };
         
         wsRef.current.onmessage = (event) => {
@@ -79,7 +79,7 @@ export function useWebSocketNotifications() {
         case 'critical_crash':
           return 'Critical System Failure';
         default:
-          return 'Crash Alert';
+          return 'Notification';
       }
     };
 

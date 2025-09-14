@@ -16,6 +16,7 @@ import { ModernSeverityChart } from '@/components/dashboard/ModernSeverityChart'
 import { ModernImpactedComponents } from '@/components/dashboard/ModernImpactedComponents';
 import { CrashTable } from '@/components/crashes/CrashTable';
 import { RepositoryManager } from '@/components/repositories/RepositoryManager';
+import { EmptyRepositoryState } from '@/components/repositories/EmptyRepositoryState';
 import {
   Select,
   SelectContent,
@@ -43,6 +44,7 @@ export default function Dashboard() {
   const [insights, setInsights] = useState<InsightsData | null>(null);
   const [isLoadingInsights, setIsLoadingInsights] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
+  const [showAddRepoDialog, setShowAddRepoDialog] = useState(false);
 
   // Fetch insights for selected repository
   const fetchInsights = async (repositoryId?: string) => {
@@ -153,6 +155,26 @@ export default function Dashboard() {
   };
 
   const filteredCrashes = Array.isArray(crashes) ? crashes : [];
+
+  // Show empty state if no repositories and not loading
+  if (!isLoadingRepos && repositories.length === 0) {
+    return (
+      <div className="flex-1 overflow-auto">
+        <EmptyRepositoryState 
+          onAddRepository={() => setShowAddRepoDialog(true)} 
+        />
+        {/* Hidden RepositoryManager for empty state */}
+        <RepositoryManager
+          repositories={repositories}
+          onRepositoryAdd={handleAddRepository}
+          onRepositoryRemove={handleRemoveRepository}
+          isOpen={showAddRepoDialog}
+          onOpenChange={setShowAddRepoDialog}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 overflow-auto">
       <div className="p-4 sm:p-6 space-y-6">

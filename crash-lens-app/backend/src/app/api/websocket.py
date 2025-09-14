@@ -20,7 +20,7 @@ async def websocket_endpoint(websocket: WebSocket):
         # Send a welcome message
         welcome_message = {
             "type": "connection_established",
-            "message": "Connected to crash notifications",
+            "message": "Connected to Realtime Updates",
             "timestamp": "2024-01-01T00:00:00Z"
         }
         await websocket_manager.send_personal_message(
