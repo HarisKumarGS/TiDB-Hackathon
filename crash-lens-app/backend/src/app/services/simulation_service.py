@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from src.app.core import error_analyzer_agent_executor
+from src.app.models.sqlalchemy_models import Repository
 from ..schema.simulation import (
     SimulateCrashRequest,
     SimulateCrashResponse,
@@ -78,7 +79,9 @@ class SimulationService:
         # Store S3 URL in database instead of log content
         error_log_updated = self._update_crash_error_log(crash_id, s3_url)
 
-        background_tasks.add_task(self._trigger_agent, f"{traceback_text}\n crash id: {crash_id}\n repository id: {request.repository_id}\n repository url: {request.repository_url}")
+        repository = self.db.get(Repository, request.repository_id)
+
+        background_tasks.add_task(self._trigger_agent, f"{traceback_text}\n crash id: {crash_id}\n repository id: {request.repository_id}\n repository url: {repository.url}")
 
         # Send Slack notification with real S3 URL
         slack_notification_sent = self.slack_service.send_crash_notification(

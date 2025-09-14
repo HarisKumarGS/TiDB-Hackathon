@@ -7,6 +7,7 @@ from pathlib import Path
 import logging
 
 import git
+from git import Repo
 from github import Github
 from unidiff import PatchSet, PatchedFile
 from sqlalchemy.orm import Session
@@ -22,15 +23,15 @@ class GitHubService:
     Synchronous GitHub service for creating pull requests from crash RCA diffs.
     Uses unidiff for patch parsing, difflib for intelligent patching, GitPython for local operations, and PyGithub for GitHub API.
     """
-    
+
     def __init__(self):
         self.github_token = os.getenv("GITHUB_TOKEN")
         if not self.github_token:
             raise ValueError("GITHUB_TOKEN environment variable is required")
-        
+
         self.github_client = Github(self.github_token)
         self.temp_dir = None
-    
+
     async def create_pull_request_from_rca(self, crash_rca_id: str, db: Session) -> Dict:
         """
         Main method to create a pull request from a crash RCA.
@@ -47,38 +48,38 @@ class GitHubService:
             rca_data = self._get_rca_data(crash_rca_id, db)
             if not rca_data:
                 raise ValueError(f"Crash RCA with ID {crash_rca_id} not found")
-            
+
             # Validate git diff
             if not rca_data["git_diff"]:
                 raise ValueError("No git diff found in RCA data")
-            
+
             # Parse diff with unidiff
-            patch_set = self._parse_diff_with_unidiff(rca_data["git_diff"])
-            
+            # patch_set = self._parse_diff_with_unidiff(rca_data["git_diff"])
+
             # Setup temporary workspace
             self.temp_dir = tempfile.mkdtemp(prefix="github_service_")
-            
+
             try:
-                # Clone repository and create feature branch
-                repo_path = self._clone_repository(rca_data["repository_url"])
+                print(rca_data['repository_id'])
+                repo_path = f"./repo-{rca_data['repository_id']}"
                 branch_name = f"fix/crash-rca-{crash_rca_id}"
-                
+
                 # Create and checkout feature branch
-                repo = git.Repo(repo_path)
+                repo = Repo(repo_path)
                 self._create_feature_branch(repo, branch_name)
-                
+
                 # Apply patches using difflib-based approach
-                self._apply_patches_to_repo(repo_path, patch_set)
-                
+                self._apply_diff_with_git(repo, rca_data["git_diff"])
+
                 # Commit changes
                 commit_message = self._generate_commit_message(rca_data)
                 repo.git.add(A=True)
                 repo.git.commit(m=commit_message)
-                
+
                 # Push to remote
                 origin = repo.remote("origin")
                 origin.push(branch_name)
-                
+
                 # Create pull request
                 pr_result = self._create_github_pr(
                     rca_data["repository_url"],
@@ -86,7 +87,7 @@ class GitHubService:
                     rca_data,
                     crash_rca_id
                 )
-                
+
                 return {
                     "status": "success",
                     "pr_url": pr_result["html_url"],
@@ -94,28 +95,49 @@ class GitHubService:
                     "branch_name": branch_name,
                     "commit_sha": str(repo.head.commit)
                 }
-                
+
             finally:
                 # Cleanup temporary directory
                 if self.temp_dir and os.path.exists(self.temp_dir):
                     shutil.rmtree(self.temp_dir)
-                    
+
         except Exception as e:
             logger.error(f"Error creating PR for RCA {crash_rca_id}: {str(e)}")
             # Cleanup on error
             if self.temp_dir and os.path.exists(self.temp_dir):
                 shutil.rmtree(self.temp_dir)
             raise
-    
+
+    def _apply_diff_with_git(self, repo: Repo, git_diff: str):
+        """
+        Apply a raw git diff string using `git apply`.
+        """
+        try:
+            clean_diff = "\n".join(line.rstrip() for line in git_diff.splitlines())
+            print(clean_diff)
+            with tempfile.NamedTemporaryFile(mode="w+", delete=False) as tmp:
+                tmp.write(clean_diff)
+                tmp.flush()
+                repo.git.execute([
+                    "git", "apply",
+                    "--whitespace=fix",
+                    "--ignore-space-change",
+                    tmp.name
+                ])
+            logger.info("Successfully applied patch with git apply")
+        except Exception as e:
+            logger.error(f"git apply failed: {e}")
+            raise
+
     def _get_rca_data(self, crash_rca_id: str, db: Session) -> Optional[Dict]:
         """Fetch RCA data with related crash and repository information."""
         rca = db.query(CrashRCA).filter(CrashRCA.id == crash_rca_id).first()
         if not rca:
             return None
-        
+
         crash = db.query(Crash).filter(Crash.id == rca.crash_id).first()
         repository = db.query(Repository).filter(Repository.id == crash.repository_id).first()
-        
+
         return {
             "rca_id": rca.id,
             "git_diff": rca.git_diff,
@@ -126,9 +148,10 @@ class GitHubService:
             "crash_error_type": crash.error_type,
             "crash_severity": crash.severity,
             "repository_url": repository.url,
+            "repository_id": repository.id,
             "repository_name": repository.name
         }
-    
+
     def _parse_diff_with_unidiff(self, git_diff: str) -> PatchSet:
         """
         Parse git diff using unidiff library.
@@ -143,14 +166,14 @@ class GitHubService:
             patch_set = PatchSet.from_string(git_diff)
             if not patch_set:
                 raise ValueError("Empty or invalid patch set")
-            
+
             logger.info(f"Parsed {len(patch_set)} files from diff")
             return patch_set
-            
+
         except Exception as e:
             logger.error(f"Error parsing diff: {str(e)}")
             raise ValueError(f"Invalid git diff format: {str(e)}")
-    
+
     def _clone_repository(self, repo_url: str) -> str:
         """
         Clone repository to temporary directory.
@@ -162,7 +185,7 @@ class GitHubService:
             Path to cloned repository
         """
         repo_path = os.path.join(self.temp_dir, "repo")
-        
+
         # Handle GitHub authentication for private repos
         if "github.com" in repo_url and not repo_url.startswith("https://"):
             # Convert SSH URL to HTTPS with token
@@ -172,7 +195,7 @@ class GitHubService:
         elif repo_url.startswith("https://github.com/"):
             # Add token to HTTPS URL
             repo_url = repo_url.replace("https://github.com/", f"https://{self.github_token}@github.com/")
-        
+
         try:
             git.Repo.clone_from(repo_url, repo_path)
             logger.info(f"Successfully cloned repository to {repo_path}")
@@ -180,7 +203,7 @@ class GitHubService:
         except Exception as e:
             logger.error(f"Error cloning repository: {str(e)}")
             raise
-    
+
     def _create_feature_branch(self, repo: git.Repo, branch_name: str):
         """
         Create and checkout a new feature branch.
@@ -198,11 +221,14 @@ class GitHubService:
             except:
                 # Use current branch if neither main nor master exists
                 pass
-        
+
         # Create and checkout new branch
-        repo.git.checkout("-b", branch_name)
+        if branch_name in repo.heads:
+            repo.git.checkout(branch_name)
+        else:
+            repo.git.checkout("-b", branch_name)
         logger.info(f"Created and checked out branch: {branch_name}")
-    
+
     def _apply_patches_to_repo(self, repo_path: str, patch_set: PatchSet):
         """
         Apply patches to the repository using difflib-based intelligent patching.
@@ -213,24 +239,24 @@ class GitHubService:
         """
         for patched_file in patch_set:
             file_path = os.path.join(repo_path, patched_file.path)
-            
+
             try:
                 # Handle new files
                 if patched_file.is_added_file:
                     self._create_new_file(file_path, patched_file)
-                
+
                 # Handle deleted files
                 elif patched_file.is_removed_file:
                     if os.path.exists(file_path):
                         os.remove(file_path)
                         logger.info(f"Deleted file: {patched_file.path}")
-                
+
                 # Handle modified files
                 elif patched_file.is_modified_file:
                     self._modify_existing_file_with_difflib(file_path, patched_file)
-                
+
                 logger.info(f"Successfully applied patch for: {patched_file.path}")
-                
+
             except Exception as e:
                 logger.error(f"Failed to apply patch for {patched_file.path}: {str(e)}")
                 # Try fallback method for modified files
@@ -239,23 +265,23 @@ class GitHubService:
                     self._modify_existing_file_fallback(file_path, patched_file)
                 else:
                     raise
-    
+
     def _create_new_file(self, file_path: str, patched_file: PatchedFile):
         """
         Create a new file with content from patch using proper reconstruction.
         """
         # Ensure directory exists
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        
+
         # Reconstruct the complete file content from the patch
         content_lines = []
-        
+
         for hunk in patched_file:
             for line in hunk:
                 if line.is_added:
                     # Remove the trailing newline from line.value as we'll add it back
                     content_lines.append(line.value.rstrip('\n\r'))
-        
+
         # Write the complete file content
         with open(file_path, 'w', encoding='utf-8') as f:
             if content_lines:
@@ -263,9 +289,9 @@ class GitHubService:
                 # Add final newline if the last line in patch had one
                 if content_lines and not content_lines[-1].endswith('\n'):
                     f.write('\n')
-        
+
         logger.info(f"Created new file: {patched_file.path} with {len(content_lines)} lines")
-    
+
     def _modify_existing_file_with_difflib(self, file_path: str, patched_file: PatchedFile):
         """
         Modify an existing file using difflib for intelligent patch application.
@@ -274,16 +300,16 @@ class GitHubService:
             logger.warning(f"File {file_path} does not exist, creating new file")
             self._create_new_file(file_path, patched_file)
             return
-        
+
         # Read original file
         with open(file_path, 'r', encoding='utf-8') as f:
             original_content = f.read()
-        
+
         original_lines = original_content.splitlines(keepends=True)
-        
+
         # Extract the target content from the patch
         target_lines = self._reconstruct_target_from_patch(original_lines, patched_file)
-        
+
         # Use difflib to create a more robust patch application
         if target_lines is not None:
             # Write the target content
@@ -293,8 +319,9 @@ class GitHubService:
         else:
             # Fallback to hunk-by-hunk application
             self._modify_existing_file_fallback(file_path, patched_file)
-    
-    def _reconstruct_target_from_patch(self, original_lines: List[str], patched_file: PatchedFile) -> Optional[List[str]]:
+
+    def _reconstruct_target_from_patch(self, original_lines: List[str], patched_file: PatchedFile) -> Optional[
+        List[str]]:
         """
         Reconstruct the target file content from the original and patch using difflib.
         
@@ -308,34 +335,34 @@ class GitHubService:
         try:
             # Create a copy of original lines to modify
             result_lines = original_lines.copy()
-            
+
             # Apply hunks in reverse order to maintain line numbers
             for hunk in reversed(patched_file):
                 result_lines = self._apply_hunk_with_difflib(result_lines, hunk)
-            
+
             return result_lines
-            
+
         except Exception as e:
             logger.warning(f"Failed to reconstruct target using difflib: {str(e)}")
             return None
-    
+
     def _apply_hunk_with_difflib(self, lines: List[str], hunk) -> List[str]:
         """
         Apply a single hunk to file lines using difflib for better matching.
         """
         # Convert to 0-based indexing
         start_line = max(0, hunk.target_start - 1)
-        
+
         # Extract the original and target sections from the hunk
         original_section = []
         target_section = []
-        
+
         for line in hunk:
             if line.is_context or line.is_removed:
                 original_section.append(line.value)
             if line.is_context or line.is_added:
                 target_section.append(line.value)
-        
+
         # Find the best match for the original section in the file
         if original_section:
             best_match_start = self._find_best_match_with_difflib(lines, original_section, start_line)
@@ -343,7 +370,7 @@ class GitHubService:
                 # Replace the matched section with the target section
                 end_line = best_match_start + len(original_section)
                 return lines[:best_match_start] + target_section + lines[end_line:]
-        
+
         # If no good match found, try the original position
         if start_line < len(lines):
             end_line = min(len(lines), start_line + len(original_section))
@@ -351,7 +378,7 @@ class GitHubService:
         else:
             # Append to end of file
             return lines + target_section
-    
+
     def _find_best_match_with_difflib(self, lines: List[str], pattern: List[str], hint_start: int) -> Optional[int]:
         """
         Find the best match for a pattern in the file using difflib.
@@ -366,29 +393,29 @@ class GitHubService:
         """
         if not pattern:
             return hint_start
-        
+
         # Try exact match at hint position first
-        if (hint_start + len(pattern) <= len(lines) and 
-            lines[hint_start:hint_start + len(pattern)] == pattern):
+        if (hint_start + len(pattern) <= len(lines) and
+                lines[hint_start:hint_start + len(pattern)] == pattern):
             return hint_start
-        
+
         # Use difflib to find the best match
-        matcher = difflib.SequenceMatcher(None, [line.rstrip('\n\r') for line in lines], 
-                                        [line.rstrip('\n\r') for line in pattern])
-        
+        matcher = difflib.SequenceMatcher(None, [line.rstrip('\n\r') for line in lines],
+                                          [line.rstrip('\n\r') for line in pattern])
+
         # Find the best matching block
         best_match = None
         best_ratio = 0.0
-        
+
         for match in matcher.get_matching_blocks():
             if match.size >= len(pattern) * 0.8:  # At least 80% match
                 ratio = match.size / len(pattern)
                 if ratio > best_ratio:
                     best_ratio = ratio
                     best_match = match.a
-        
+
         return best_match
-    
+
     def _modify_existing_file_fallback(self, file_path: str, patched_file: PatchedFile):
         """
         Fallback method for modifying files using simple hunk application.
@@ -396,10 +423,10 @@ class GitHubService:
         # Read original file
         with open(file_path, 'r', encoding='utf-8') as f:
             original_lines = f.readlines()
-        
+
         # Apply hunks in reverse order to maintain line numbers
         modified_lines = original_lines.copy()
-        
+
         for hunk in reversed(patched_file):
             try:
                 modified_lines = self._apply_hunk_simple(modified_lines, hunk)
@@ -407,13 +434,13 @@ class GitHubService:
                 logger.warning(f"Failed to apply hunk in fallback mode: {str(e)}")
                 # Continue with other hunks
                 continue
-        
+
         # Write modified content
         with open(file_path, 'w', encoding='utf-8') as f:
             f.writelines(modified_lines)
-        
+
         logger.info(f"Modified file using fallback method: {patched_file.path}")
-    
+
     def _apply_hunk_simple(self, lines: List[str], hunk) -> List[str]:
         """
         Simple hunk application method.
@@ -421,7 +448,7 @@ class GitHubService:
         start_line = max(0, hunk.target_start - 1)
         new_lines = []
         old_line_idx = start_line
-        
+
         for line in hunk:
             if line.is_context:
                 if old_line_idx < len(lines):
@@ -434,32 +461,32 @@ class GitHubService:
                     old_line_idx += 1
             elif line.is_added:
                 new_lines.append(line.value)
-        
+
         # Replace the relevant section
         end_line = old_line_idx
         return lines[:start_line] + new_lines + lines[end_line:]
-    
+
     def _generate_commit_message(self, rca_data: Dict) -> str:
         """Generate a meaningful commit message from RCA data."""
         component = rca_data.get("crash_component", "Unknown")
         error_type = rca_data.get("crash_error_type", "Unknown")
-        
+
         title = f"Fix {error_type} in {component}"
-        
+
         body_parts = []
         if rca_data.get("description"):
             body_parts.append(f"Description: {rca_data['description']}")
-        
+
         if rca_data.get("root_cause_identification"):
             body_parts.append(f"Root Cause: {rca_data['root_cause_identification']}")
-        
+
         if rca_data.get("solution"):
             body_parts.append(f"Solution: {rca_data['solution']}")
-        
+
         body_parts.append(f"RCA ID: {rca_data['rca_id']}")
-        
+
         return f"{title}\n\n" + "\n\n".join(body_parts)
-    
+
     def _create_github_pr(self, repo_url: str, branch_name: str, rca_data: Dict, crash_rca_id: str) -> Dict:
         """
         Create a pull request using PyGithub.
@@ -475,14 +502,14 @@ class GitHubService:
         """
         # Extract repository name from URL
         repo_name = self._extract_repo_name(repo_url)
-        
+
         try:
             repo = self.github_client.get_repo(repo_name)
-            
+
             # Generate PR title and body
             pr_title = f"Fix: {rca_data.get('crash_error_type', 'Unknown Error')} in {rca_data.get('crash_component', 'Unknown Component')}"
             pr_body = self._generate_pr_body(rca_data, crash_rca_id)
-            
+
             # Create pull request
             pr = repo.create_pull(
                 title=pr_title,
@@ -490,15 +517,15 @@ class GitHubService:
                 head=branch_name,
                 base="main"  # Try main first
             )
-            
+
             logger.info(f"Created PR #{pr.number}: {pr.html_url}")
-            
+
             return {
                 "number": pr.number,
                 "html_url": pr.html_url,
                 "title": pr.title
             }
-            
+
         except Exception as e:
             # Try with master branch if main fails
             if "main" in str(e):
@@ -509,7 +536,7 @@ class GitHubService:
                         head=branch_name,
                         base="master"
                     )
-                    
+
                     return {
                         "number": pr.number,
                         "html_url": pr.html_url,
@@ -521,7 +548,7 @@ class GitHubService:
             else:
                 logger.error(f"Error creating PR: {str(e)}")
                 raise
-    
+
     def _extract_repo_name(self, repo_url: str) -> str:
         """Extract repository name from URL."""
         # Handle various URL formats
@@ -532,7 +559,7 @@ class GitHubService:
             return parts.replace(".git", "")
         else:
             raise ValueError(f"Unsupported repository URL format: {repo_url}")
-    
+
     def _generate_pr_body(self, rca_data: Dict, crash_rca_id: str) -> str:
         """Generate PR body from RCA data."""
         body_parts = [
@@ -544,28 +571,28 @@ class GitHubService:
             f"**Severity:** {rca_data.get('crash_severity', 'Unknown')}",
             ""
         ]
-        
+
         if rca_data.get("description"):
             body_parts.extend([
                 "## 📝 Description",
                 rca_data["description"],
                 ""
             ])
-        
+
         if rca_data.get("root_cause_identification"):
             body_parts.extend([
                 "## 🔍 Root Cause Analysis",
                 rca_data["root_cause_identification"],
                 ""
             ])
-        
+
         if rca_data.get("solution"):
             body_parts.extend([
                 "## 💡 Solution",
                 rca_data["solution"],
                 ""
             ])
-        
+
         body_parts.extend([
             "## ⚠️ Important Notes",
             "- This PR was automatically generated from a crash RCA analysis",
@@ -580,7 +607,7 @@ class GitHubService:
             "---",
             "*Generated by CrashLens RCA System with Enhanced Patch Application*"
         ])
-        
+
         return "\n".join(body_parts)
 
 

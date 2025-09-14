@@ -69,6 +69,20 @@ The diff should be minimal but sufficient to fix the bug and valid to raise the 
 
 The diff should be in the format suitable to git patch with proper hunks and right headers
 
+When generating a git patch:
+
+1. Output valid, standard unified diff format (`git diff` style) that can be applied with `git apply` or `git am`.
+2. Ensure all added lines have no trailing whitespace.
+3. Ensure all hunk headers (`@@ -old,+new @@`) match the actual number of lines changed in the patch.
+4. Preserve the original line endings of the target file (`\n` or `\r\n`).
+5. Only include lines that exist in the file context. Do not invent unrelated lines.
+6. Do not include extra blank lines at the end of a hunk unless they exist in the file.
+7. Ensure indentation matches the original file.
+8. For new files, generate the complete content of the file.
+9. For modified files, include **at least 3 lines of context** before and after the change.
+10. If unsure about the file context, include context lines from the file to guarantee the patch will apply cleanly.
+11. Output the patch as **raw text only**, with no extra formatting, markdown, or explanation.
+
 If uncertain, perform additional queries with get_data_from_embeddings.
 """
 
