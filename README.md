@@ -25,7 +25,27 @@ CrashLens leverages advanced code and document indexers to enable semantic searc
 
 ---
 
+## High Level Design
+
+```mermaid
+graph TD;
+    UI[UI] --> AddRepo[Add Repository]
+    AddRepo --> Indexer[Indexing Service]
+    Indexer --> AST[AST Extractor]
+    AST --> Enricher[Semantic Enricher]
+    Enricher --> Embedder[Embedding Model]
+    Embedder --> VDB[(Vector DB)]
+ 
+    CrashDetector[Crash Detector] --> Slack[Slack Bot]
+    Slack --> Agent[Crash Analysis Agent]
+    Agent --> VDB
+    Agent --> Docs[Documentation Service]
+    Agent --> Git[Source Repository]
+    Agent --> RCA[Root Cause Analyzer]
+    RCA --> Diff[Diff Generator]
+```
+
 ## Submission Notes
 
-- See individual `README.md` files in [backend](./crash-lens-app/backend/) and [frontent](./crash-lens-app/frontend/) for more details.
+- See individual `README.md` files in [backend](./crash-lens-app/backend/) and [frontend](./crash-lens-app/frontend/) for more details.
 - For demo, visit: [Live Demo](http://tidb-hackathon-static-site.s3-website-us-east-1.amazonaws.com)
