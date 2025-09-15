@@ -40,7 +40,7 @@ graph TD;
    ```
 
 2. **Configure environment:**
-   - Add Environment Variables to .env file in the backend dir
+   - Add Environment Variables to .env file in the backend dir (Shared via LastPass to hackathon-judge@pingcap.com)
         ```
         VOYAGE_API_KEY=
         TIDB_CONNECTION_STRING=
