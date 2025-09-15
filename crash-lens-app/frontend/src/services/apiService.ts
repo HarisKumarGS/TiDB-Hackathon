@@ -1,8 +1,6 @@
 import { Repository, Crash, CrashDetail, ApiCrashDetailResponse } from '@/types';
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '/api' 
-  : 'http://127.0.0.1:8000/api/v1';
+const API_BASE_URL = 'http://ec2-35-171-17-174.compute-1.amazonaws.com:8000/api/v1';
 
 class ApiService {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
