@@ -16,7 +16,6 @@ CrashLens leverages advanced code and document indexers to enable semantic searc
 
 ## Key Features
 
-- **
 - **Crash Simulation:** Generate realistic crash logs and RCA reports.
 - **Root Cause Analysis:** Automated RCA and bug fixes using LLM agents.
 - **Repository Management:** Multiple Projects in single dashborad

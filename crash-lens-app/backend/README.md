@@ -40,12 +40,13 @@ graph TD;
    ```
 
 2. **Configure environment:**
-   - Add Environment Variables to .env file
-   ```
-   VOYAGE_API_KEY=
-   TIDB_CONNECTION_STRING=
-   ```
-   - configure AWS keys
+   - Add Environment Variables to .env file in the backend dir
+        ```
+        VOYAGE_API_KEY=
+        TIDB_CONNECTION_STRING=
+        GITHUB_TOKEN=
+        ```
+   - Configure AWS keys in your system
 
 3. **Start the API server:**
    ```sh
@@ -55,11 +56,12 @@ graph TD;
 
 ## Key Features
 
-- **Crash Simulation:** Generate realistic crash logs and RCA reports.
 - **Repository Management:** Add/remove GitHub repositories.
-- **Root Cause Analysis:** Automated RCA creation using LLM agents.
-- **GitHub Integration:** Validate diffs
 - **WebSocket Notifications:** Real-time updates to frontend.
+- **Semantic Storage:** Embeddings for code snippets, error logs, and documentation are indexed and stored for fast retrieval.
+- **Slack Notification** - Notifies crashes immedailtely in slack
+- **Multimodal RAG:** Combines text code semantics and technical document images / pdfs, enabling the LLM agent to reason across multiple data types and sources.
+- **Contextual RCA:** RCA agent uses indexed semantics/ documents to provide context-aware suggestions and fixes.
 
 ## API Endpoints
 
