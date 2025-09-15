@@ -1,73 +1,57 @@
-# Welcome to your Lovable project
+# CrashLens App — Frontend
 
-## Project info
+#### [Live Demo URL](http://tidb-hackathon-static-site.s3-website-us-east-1.amazonaws.com)
 
-**URL**: https://lovable.dev/projects/d9a38c11-5a04-4e33-9969-5cfa5b9478f2
+## Overview
 
-## How can I edit this code?
+CrashLens frontend is a modern dashboard for crash monitoring, RCA visualization, and repository management. It provides real-time insights
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/d9a38c11-5a04-4e33-9969-5cfa5b9478f2) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
+- React (TypeScript)
 - Vite
-- TypeScript
-- React
-- shadcn-ui
 - Tailwind CSS
+- shadcn-ui (component library)
+- Framer Motion (animations)
+- React Query (data fetching)
+- WebSockets (notifications)
 
-## How can I deploy this project?
+## How to Run Locally
 
-Simply open [Lovable](https://lovable.dev/projects/d9a38c11-5a04-4e33-9969-5cfa5b9478f2) and click on Share -> Publish.
+1. **Install dependencies:**
+   ```sh
+   cd crash-lens-app/frontend
+   npm install
+   ```
 
-## Can I connect a custom domain to my Lovable project?
+2. **Start the development server:**
+   ```sh
+   npm run dev
+   ```
 
-Yes, you can!
+3. **Build for production:**
+   ```sh
+   npm run build
+   ```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Key Features
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- **Dashboard:** Crash stats, severity charts, trends.
+- **Crash List:** Filter, search, and view crash details.
+- **Crash Detail:** RCA report, log viewer, git diff viewer, PR creation.
+- **Repository Manager:** Add/remove repositories.
+- **Real-time Notifications:** WebSocket-powered updates.
+
+## Design Highlights
+
+- Responsive, glassmorphic UI with animated gradients
+- Modular component structure for scalability
+- Integrated diff viewer for code changes
+- Markdown rendering for RCA sections
+- Context-based state management for repositories
+
+## API Integration
+
+- Connects to backend at `/api/v1`
+- Uses [`apiService`](src/services/apiService.ts) for all requests
+---
