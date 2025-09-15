@@ -44,13 +44,18 @@ graph TD;
         ```
         VOYAGE_API_KEY=
         TIDB_CONNECTION_STRING=
+        SLACK_BOT_TOKEN=
+        SLACK_CHANNEL_ID=
+        DATABASE_URL=
+        S3_BUCKET_NAME=
+        AWS_REGION=us-east-1
         GITHUB_TOKEN=
         ```
    - Configure AWS keys in your system
 
 3. **Start the API server:**
    ```sh
-   uvicorn "main:app" --host 0.0.0.0 --port 8000
+   poetry run uvicorn main:app --reload
    ```
    - The API runs at `http://localhost:8000`.
 
@@ -67,7 +72,8 @@ graph TD;
 
 - `/api/v1/simulate-crash` — Simulate crash scenarios
 - `/api/v1/repository` — Manage repositories
-- `/api/v1/insights` — Crash analytics
+- `/api/v1/insights` — Application Insights
+- `/api/v1/crashes` — Manage Crashes
 
 See [src/app/api](src/app/api) for details.
 
